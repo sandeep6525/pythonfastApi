@@ -3,12 +3,106 @@ import json
 import os
 from datetime import datetime
 
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 DB_PATH = "levelupwards.db"
 
+
+class CompatRow(dict):
+    """Allows database rows to work with both row['column'] and row[0]."""
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super().__getitem__(key)
+
+
+class PostgresCursorWrapper:
+    """Makes existing SQLite-style ? placeholders work with PostgreSQL."""
+
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def _convert_query(self, query):
+        return query.replace("?", "%s")
+
+    def execute(self, query, params=None):
+        query = self._convert_query(query)
+
+        if params is None:
+            self.cursor.execute(query)
+        else:
+            self.cursor.execute(query, params)
+
+        return self
+
+    def executemany(self, query, params):
+        query = self._convert_query(query)
+        self.cursor.executemany(query, params)
+        return self
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+
+        if row is None:
+            return None
+
+        if isinstance(row, dict):
+            return CompatRow(row)
+
+        return row
+
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+
+        return [
+            CompatRow(row) if isinstance(row, dict) else row
+            for row in rows
+        ]
+
+    def __getattr__(self, name):
+        return getattr(self.cursor, name)
+
+
+class PostgresConnectionWrapper:
+    """Keeps the existing connection API compatible with the project."""
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def cursor(self):
+        from psycopg.rows import dict_row
+
+        return PostgresCursorWrapper(
+            self.connection.cursor(row_factory=dict_row)
+        )
+
+    def commit(self):
+        self.connection.commit()
+
+    def rollback(self):
+        self.connection.rollback()
+
+    def close(self):
+        self.connection.close()
+
+
 def get_db_connection():
+    # Production: PostgreSQL / Neon
+    if DATABASE_URL:
+        import psycopg
+
+        conn = psycopg.connect(DATABASE_URL)
+
+        return PostgresConnectionWrapper(conn)
+
+    # Local development: SQLite
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     return conn
+
+ 
 
 def init_db():
     conn = get_db_connection()
@@ -298,7 +392,9 @@ def init_db():
     conn.close()
     
     # Seed data
-    seed_data()
+     
+    if not DATABASE_URL:
+        seed_data()
 
 def seed_data():
     conn = get_db_connection()
