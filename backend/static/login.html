@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login | Levelupwards</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background: #f5f7ff;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            width: 55px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #050817;
+            color: white;
+            border-radius: 14px;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #111827;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 15px;
+            margin-bottom: 20px;
+            outline: none;
+            background: white;
+            color: #374151;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #4f46e5;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: auto;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: #111827;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1f2937;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #errorMessage {
+            color: #dc2626;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #9ca3af;
+            margin-top: 25px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+
+        <div class="login-card">
+
+            <div class="logo">
+                L
+            </div>
+
+            <h1>Welcome Back</h1>
+
+            <p class="subtitle">
+                Login to Levelupwards Talent Operating System
+            </p>
+
+            <form id="loginForm">
+
+                <!-- ROLE -->
+                <label for="role">
+                    Select Role
+                </label>
+
+                <select id="role" name="role" required>
+                    <option value="" selected disabled>
+                        Select your role
+                    </option>
+
+                    <option value="administrator">
+                        Administrator
+                    </option>
+
+                    <option value="recruiter">
+                        Recruiter
+                    </option>
+
+                    <option value="user">
+                        User
+                    </option>
+                </select>
+
+
+                <!-- EMAIL -->
+                <label for="email">
+                    Email
+                </label>
+
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+
+                <!-- PASSWORD -->
+                <label for="password">
+                    Password
+                </label>
+
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+
+
+                <!-- LOGIN BUTTON -->
+                <button type="submit" id="loginButton">
+                    Login
+                </button>
+
+                <p id="errorMessage"></p>
+
+            </form>
+
+
+            <div class="footer">
+                © 2026 Levelupwards
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        const loginForm = document.getElementById("loginForm");
+
+        const loginButton = document.getElementById("loginButton");
+
+        const errorMessage = document.getElementById("errorMessage");
+
+
+        loginForm.addEventListener("submit", async function (event) {
+
+            event.preventDefault();
+
+            errorMessage.textContent = "";
+
+            loginButton.disabled = true;
+
+            loginButton.textContent = "Logging in...";
+
+
+            const role =
+                document.getElementById("role").value;
+
+            const email =
+                document.getElementById("email").value.trim();
+
+            const password =
+                document.getElementById("password").value;
+
+
+            try {
+
+                const response = await fetch("/api/login", {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        role: role,
+                        email: email,
+                        password: password
+                    })
+
+                });
+
+
+                const data = await response.json();
+
+
+                if (!response.ok) {
+
+                    errorMessage.textContent =
+                        data.detail || "Invalid login details";
+
+                    return;
+                }
+
+
+                // Save JWT token
+                localStorage.setItem(
+                    "access_token",
+                    data.access_token
+                );
+
+
+                // Save user information
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify(data.user)
+                );
+
+
+                // Login successful
+                if (data.user.role === "administrator") {
+
+                    window.location.href = "/admin";
+
+                } else {
+
+                    window.location.href = "/";
+
+                }
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                errorMessage.textContent =
+                    "Unable to connect to server";
+
+            }
+            finally {
+
+                loginButton.disabled = false;
+
+                loginButton.textContent = "Login";
+
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>

@@ -91,9 +91,7 @@ def get_db_connection():
     # Production: PostgreSQL / Neon
     if DATABASE_URL:
         import psycopg
-
         conn = psycopg.connect(DATABASE_URL)
-
         return PostgresConnectionWrapper(conn)
 
     # Local development: SQLite
@@ -385,6 +383,20 @@ def init_db():
         structural_assessment TEXT,
         compliance_optin INTEGER,
         timestamp TEXT
+    )
+    """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        last_login TEXT,
+
+        CHECK (role IN ('administrator', 'recruiter', 'user'))
     )
     """)
     

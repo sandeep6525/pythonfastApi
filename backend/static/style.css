@@ -27,6 +27,7 @@
     scrollbar-color: var(--border-color) transparent;
 }
 
+
 body {
     background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
     color: var(--text-primary);

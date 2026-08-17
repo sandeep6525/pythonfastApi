@@ -1,7 +1,17 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import FileResponse, JSONResponse
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from backend.auth import (
+    LoginRequest,
+    RegisterRequest,
+    login_user,
+    register_user,
+    JWT_SECRET,
+    JWT_ALGORITHM
+)
+from jose import jwt, JWTError
 import json
 import os
 import sqlite3
@@ -25,11 +35,74 @@ from backend.agents import (
     SLAComplianceAgent,
     AgentDecisionLogger
 )
+from backend.auth import (
+    LoginRequest,
+    RegisterRequest,
+    login_user,
+    register_user,
+    create_admin_user,
+    require_admin,
+)
+from backend.admin import router as admin_router
 from backend.ingestion import parse_resume_text_to_twin, sync_candidate_external_sources
 from backend.mcp_server import router as mcp_router
 from backend.events import publish_event
-
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 app = FastAPI(title="Levelupwards - AI-Native Talent Operating System")
+app.include_router(admin_router)
+
+
+@app.get("/admin")
+def admin_dashboard():
+    return FileResponse(STATIC_DIR / "admin-dashboard.html")
+
+    
+
+@app.post("/api/register")
+def register(request: RegisterRequest):
+    return register_user(
+        request.name,
+        request.email,
+        request.password
+    )
+
+@app.get("/login")
+def login_page():
+    return FileResponse(STATIC_DIR / "login.html")
+
+
+ 
+
+@app.post("/api/login")
+def login(request: LoginRequest):
+
+    result = login_user(
+        request.email,
+        request.password,
+        request.role
+    )
+
+    response = JSONResponse(result)
+
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=3600
+    )
+
+    return response
+
+@app.post("/api/create-admin")
+def create_admin():
+    return create_admin_user(
+        name="sandeepadmin",
+        email="sandeepadmin@gmail.com",
+        password="admin@123"
+    )
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -41,10 +114,43 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Entry point - serve index.html
+# =========================
+# ENTRY POINT
+# =========================
+
 @app.get("/")
-def read_root():
-    return FileResponse(os.path.join(static_dir, "index.html"))
+def home(request: Request):
+
+    token = request.cookies.get("access_token")
+
+    # No token → Login page
+    if not token:
+        response = FileResponse(STATIC_DIR / "login.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        return response
+
+    # Validate token
+    try:
+        jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALGORITHM]
+        )
+
+        # Valid token → Dashboard
+        response = FileResponse(STATIC_DIR / "index.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        return response
+
+    except JWTError:
+
+        # Invalid/expired token → Login
+        response = FileResponse(STATIC_DIR / "login.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        return response
 
 # ----------------- API ROUTES -----------------
 
