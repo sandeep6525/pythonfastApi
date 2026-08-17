@@ -1,7 +1,7 @@
 import os
 import bcrypt
 import psycopg
-from typing import Literal
+from typing import Literal, Optional, Any
 
 from dotenv import load_dotenv
 from pathlib import Path
@@ -11,7 +11,7 @@ load_dotenv(BASE_DIR / ".env")
 
 from datetime import datetime, timedelta, timezone
 from jose import jwt
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
@@ -24,10 +24,13 @@ from pydantic import BaseModel
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-JWT_SECRET = os.getenv("JWT_SECRET", "change-this-secret-in-production")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET environment variable is required and must not be empty.")
+
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = 60
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # =========================
 # LOGIN MODEL
@@ -42,15 +45,23 @@ class RegisterRequest(BaseModel):
     name: str
     email: str
     password: str
+import uuid
+
 # =========================
 # DATABASE
 # =========================
 
 def get_auth_connection():
-    if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL is not configured")
+    is_production = os.getenv("ENVIRONMENT", "").lower() == "production" or bool(os.getenv("VERCEL"))
+    if is_production and not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL environment variable is required in production environment.")
 
-    return psycopg.connect(DATABASE_URL)
+    if DATABASE_URL:
+        return psycopg.connect(DATABASE_URL)
+
+    # Local development fallback: SQLite
+    from backend.database import get_db_connection
+    return get_db_connection()
 
 
 # =========================
@@ -71,7 +82,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 # JWT
 # =========================
 
-def create_access_token(user_id: int, email: str, role: str):
+def create_access_token(user_id: Any, email: str, role: str):
 
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=JWT_EXPIRE_MINUTES
@@ -92,7 +103,7 @@ def create_access_token(user_id: int, email: str, role: str):
 
 
 # =========================
-# LOGIN
+# LOGIN & REGISTRATION
 # =========================
 
 def register_user(name: str, email: str, password: str):
@@ -122,15 +133,18 @@ def register_user(name: str, email: str, password: str):
                 bcrypt.gensalt()
             ).decode("utf-8")
 
-            # Create normal user
+            user_id = f"usr_{uuid.uuid4().hex[:12]}"
+            now_ts = datetime.now(timezone.utc).isoformat()
+
+            # Create normal user with standardized defaults
             cursor.execute(
                 """
                 INSERT INTO users
-                (name, email, password_hash, role, is_active)
-                VALUES (%s, %s, %s, 'user', TRUE)
+                (id, name, email, password_hash, role, is_active, created_at)
+                VALUES (%s, %s, %s, %s, 'user', %s, %s)
                 RETURNING id, name, email, role
                 """,
-                (name, email, password_hash)
+                (user_id, name, email, password_hash, True, now_ts)
             )
 
             user = cursor.fetchone()
@@ -140,7 +154,7 @@ def register_user(name: str, email: str, password: str):
             return {
                 "message": "User registered successfully",
                 "user": {
-                    "id": user[0],
+                    "id": str(user[0]),
                     "name": user[1],
                     "email": user[2],
                     "role": user[3]
@@ -283,9 +297,20 @@ AND role = %s
 # =========================
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
-    token = credentials.credentials
+    token = None
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+    elif "access_token" in request.cookies:
+        token = request.cookies.get("access_token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials were not provided"
+        )
 
     try:
         payload = jwt.decode(
@@ -324,7 +349,7 @@ def get_current_user(
                 FROM users
                 WHERE id = %s
                 """,
-                (int(user_id),)
+                (str(user_id),)
             )
 
             user = cursor.fetchone()
@@ -354,16 +379,40 @@ def get_current_user(
     }
 
 # =========================
-# ADMIN AUTHORIZATION
+# ROLE AUTHORIZATION DEPENDENCIES
 # =========================
+
+def require_authenticated_user(
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    return current_user
 
 def require_admin(
     current_user: dict = Depends(get_current_user)
-):
+) -> dict:
     if current_user["role"] != "administrator":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrator access required"
         )
+    return current_user
 
+def require_recruiter(
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    if current_user["role"] not in ("administrator", "recruiter"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Recruiter access required"
+        )
+    return current_user
+
+def require_user(
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    if current_user["role"] not in ("administrator", "recruiter", "user"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User access required"
+        )
     return current_user

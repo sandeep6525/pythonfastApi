@@ -1,25 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from backend.auth import get_current_user, get_auth_connection
+from backend.auth import require_admin, get_auth_connection
 
 router = APIRouter(
     prefix="/api/admin",
     tags=["Administrator"]
 )
-
-
-# =========================
-# ADMIN ACCESS CHECK
-# =========================
-
-def require_admin(current_user=Depends(get_current_user)):
-
-    if current_user["role"] != "administrator":
-        raise HTTPException(
-            status_code=403,
-            detail="Administrator access required"
-        )
-
-    return current_user
 
 
 # =========================
@@ -128,38 +113,15 @@ def get_admin_stats(
         with conn.cursor() as cursor:
 
             cursor.execute("""
-                SELECT COUNT(*)
+                SELECT 
+                    COUNT(*),
+                    COUNT(*) FILTER (WHERE is_active = TRUE),
+                    COUNT(*) FILTER (WHERE role = 'administrator'),
+                    COUNT(*) FILTER (WHERE role = 'recruiter'),
+                    COUNT(*) FILTER (WHERE role = 'user')
                 FROM users
             """)
-            total_users = cursor.fetchone()[0]
-
-            cursor.execute("""
-                SELECT COUNT(*)
-                FROM users
-                WHERE is_active = TRUE
-            """)
-            active_users = cursor.fetchone()[0]
-
-            cursor.execute("""
-                SELECT COUNT(*)
-                FROM users
-                WHERE role IN ('admin', 'administrator')
-            """)
-            administrators = cursor.fetchone()[0]
-
-            cursor.execute("""
-                SELECT COUNT(*)
-                FROM users
-                WHERE role = 'recruiter'
-            """)
-            recruiters = cursor.fetchone()[0]
-
-            cursor.execute("""
-                SELECT COUNT(*)
-                FROM users
-                WHERE role = 'user'
-            """)
-            normal_users = cursor.fetchone()[0]
+            total_users, active_users, administrators, recruiters, normal_users = cursor.fetchone()
 
             return {
                 "total_users": total_users,

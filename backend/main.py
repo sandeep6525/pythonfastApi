@@ -1,22 +1,20 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, status
 from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from backend.auth import (
-    LoginRequest,
-    RegisterRequest,
-    login_user,
-    register_user,
-    JWT_SECRET,
-    JWT_ALGORITHM
-)
 from jose import jwt, JWTError
 import json
 import os
 import sqlite3
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 # Import Levelupwards logic
 from backend.database import get_db_connection, init_db
@@ -40,24 +38,92 @@ from backend.auth import (
     RegisterRequest,
     login_user,
     register_user,
-    create_admin_user,
     require_admin,
+    require_recruiter,
+    require_user,
+    require_authenticated_user,
+    get_current_user,
+    JWT_SECRET,
+    JWT_ALGORITHM
 )
 from backend.admin import router as admin_router
 from backend.ingestion import parse_resume_text_to_twin, sync_candidate_external_sources
 from backend.mcp_server import router as mcp_router
 from backend.events import publish_event
+
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 app = FastAPI(title="Levelupwards - AI-Native Talent Operating System")
+
+# Configure CORS with specific allowed origins (local development support)
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+)
+
 app.include_router(admin_router)
 
+def check_candidate_ownership(cand_id: str, current_user: dict):
+    """Verify that a normal user can only access their own candidate profile."""
+    if current_user["role"] in ("administrator", "recruiter"):
+        return
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, email FROM candidates WHERE id = ?", (cand_id,))
+        cand = cursor.fetchone()
+        if not cand:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+        
+        user_email = (current_user.get("email") or "").lower()
+        cand_email = (cand["email"] or "").lower()
+        user_id = str(current_user.get("id") or "")
+        cand_id_str = str(cand["id"])
+        
+        if user_email != cand_email and user_id != cand_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view or modify this candidate profile"
+            )
+    finally:
+        conn.close()
 
 @app.get("/admin")
-def admin_dashboard():
-    return FileResponse(STATIC_DIR / "admin-dashboard.html")
+def admin_dashboard(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
 
-    
+    if not token:
+        response = FileResponse(STATIC_DIR / "login.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return response
+
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALGORITHM]
+        )
+        if payload.get("role") != "administrator":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrator access required"
+            )
+        response = FileResponse(STATIC_DIR / "admin-dashboard.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        return response
+    except JWTError:
+        response = FileResponse(STATIC_DIR / "login.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return response
 
 @app.post("/api/register")
 def register(request: RegisterRequest):
@@ -71,12 +137,8 @@ def register(request: RegisterRequest):
 def login_page():
     return FileResponse(STATIC_DIR / "login.html")
 
-
- 
-
 @app.post("/api/login")
 def login(request: LoginRequest):
-
     result = login_user(
         request.email,
         request.password,
@@ -96,14 +158,6 @@ def login(request: LoginRequest):
 
     return response
 
-@app.post("/api/create-admin")
-def create_admin():
-    return create_admin_user(
-        name="sandeepadmin",
-        email="sandeepadmin@gmail.com",
-        password="admin@123"
-    )
-
 # Initialize database on startup
 @app.on_event("startup")
 def startup_event():
@@ -118,44 +172,25 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # ENTRY POINT
 # =========================
 
+# =========================
+# PUBLIC HOME PAGE
+# =========================
+
 @app.get("/")
-def home(request: Request):
+def home():
+    response = FileResponse(STATIC_DIR / "home.html")
 
-    token = request.cookies.get("access_token")
+    response.headers["Cache-Control"] = (
+        "no-store, no-cache, must-revalidate, max-age=0"
+    )
 
-    # No token → Login page
-    if not token:
-        response = FileResponse(STATIC_DIR / "login.html")
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        return response
+    response.headers["Pragma"] = "no-cache"
 
-    # Validate token
-    try:
-        jwt.decode(
-            token,
-            JWT_SECRET,
-            algorithms=[JWT_ALGORITHM]
-        )
-
-        # Valid token → Dashboard
-        response = FileResponse(STATIC_DIR / "index.html")
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        return response
-
-    except JWTError:
-
-        # Invalid/expired token → Login
-        response = FileResponse(STATIC_DIR / "login.html")
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        return response
-
-# ----------------- API ROUTES -----------------
+    return response
+    # ----------------- API ROUTES -----------------
 
 @app.get("/api/requirements")
-def list_requirements():
+def list_requirements(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM requirements")
@@ -179,7 +214,7 @@ def list_requirements():
     return reqs
 
 @app.get("/api/requirements/{req_id}")
-def get_requirement(req_id: str):
+def get_requirement(req_id: str, current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -262,7 +297,7 @@ def get_requirement(req_id: str):
     }
 
 @app.get("/api/candidates")
-def list_candidates():
+def list_candidates(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM candidates")
@@ -281,7 +316,8 @@ def list_candidates():
     return candidates
 
 @app.get("/api/candidates/{cand_id}")
-def get_candidate(cand_id: str, req_id: Optional[str] = "req_1"):
+def get_candidate(cand_id: str, req_id: Optional[str] = "req_1", current_user: dict = Depends(require_authenticated_user)):
+    check_candidate_ownership(cand_id, current_user)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM candidates WHERE id = ?", (cand_id,))
@@ -327,7 +363,7 @@ def get_candidate(cand_id: str, req_id: Optional[str] = "req_1"):
     }
 
 @app.get("/api/candidates/{cand_id}/match/{req_id}")
-def match_candidate(cand_id: str, req_id: str):
+def match_candidate(cand_id: str, req_id: str, current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -380,7 +416,7 @@ def match_candidate(cand_id: str, req_id: str):
     return score
 
 @app.get("/api/decisions")
-def list_decisions():
+def list_decisions(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM decisions ORDER BY timestamp DESC LIMIT 20")
@@ -410,7 +446,7 @@ class BusinessNeedRequest(BaseModel):
     raw_text: str
 
 @app.post("/api/business-need")
-def create_business_need(req: BusinessNeedRequest):
+def create_business_need(req: BusinessNeedRequest, current_user: dict = Depends(require_recruiter)):
     event = publish_event("BusinessNeedCreated", "EmployerPortal", {
         "employer_id": req.employer_id,
         "raw_text": req.raw_text
@@ -422,13 +458,13 @@ def create_business_need(req: BusinessNeedRequest):
     return result
 
 @app.get("/api/joining-risk/{cand_id}/{req_id}")
-def check_joining_risk(cand_id: str, req_id: str):
+def check_joining_risk(cand_id: str, req_id: str, current_user: dict = Depends(require_recruiter)):
     agent = JoiningRiskAgent()
     res = agent.predict_joining_risk(cand_id, req_id)
     return res
 
 @app.post("/api/simulate")
-def run_simulation(sim_input: SimulationInput):
+def run_simulation(sim_input: SimulationInput, current_user: dict = Depends(require_authenticated_user)):
     try:
         res = run_market_simulation(sim_input)
         return res
@@ -440,7 +476,8 @@ class CandidatePrefRequest(BaseModel):
     consent_status: bool
 
 @app.post("/api/candidate/{cand_id}/preferences")
-def update_candidate_preferences(cand_id: str, pref: CandidatePrefRequest):
+def update_candidate_preferences(cand_id: str, pref: CandidatePrefRequest, current_user: dict = Depends(require_authenticated_user)):
+    check_candidate_ownership(cand_id, current_user)
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -467,7 +504,7 @@ def update_candidate_preferences(cand_id: str, pref: CandidatePrefRequest):
     return {"status": "success", "message": "Candidate preferences updated successfully"}
 
 @app.get("/api/integrations")
-def get_integrations():
+def get_integrations(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM integrations")
@@ -489,7 +526,7 @@ class IngestResumeRequest(BaseModel):
     raw_text: str
 
 @app.post("/api/ingest/resume")
-def upload_resume(req: IngestResumeRequest):
+def upload_resume(req: IngestResumeRequest, current_user: dict = Depends(require_recruiter)):
     try:
         result = parse_resume_text_to_twin(req.raw_text)
         return result
@@ -497,7 +534,7 @@ def upload_resume(req: IngestResumeRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/integrations/{integration_id}/sync")
-def sync_api_connector(integration_id: str, candidate_id: Optional[str] = "cand_1"):
+def sync_api_connector(integration_id: str, candidate_id: Optional[str] = "cand_1", current_user: dict = Depends(require_recruiter)):
     try:
         result = sync_candidate_external_sources(candidate_id, integration_id)
         conn = get_db_connection()
@@ -510,7 +547,7 @@ def sync_api_connector(integration_id: str, candidate_id: Optional[str] = "cand_
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/ingest/history")
-def get_ingestion_history():
+def get_ingestion_history(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM ingestion_history ORDER BY timestamp DESC")
@@ -530,7 +567,7 @@ def get_ingestion_history():
     return history
 
 @app.get("/api/kpis")
-def get_kpis():
+def get_kpis(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM stakeholder_kpis")
@@ -550,7 +587,7 @@ def get_kpis():
     return kpis
 
 @app.get("/api/capability-matrix")
-def get_capability_matrix():
+def get_capability_matrix(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM capability_matrix")
@@ -569,7 +606,7 @@ def get_capability_matrix():
     return matrix
 
 @app.get("/api/consultants/gamification")
-def get_gamification_leaderboard():
+def get_gamification_leaderboard(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM consultant_gamification ORDER BY points DESC")
@@ -588,7 +625,7 @@ def get_gamification_leaderboard():
     return leaderboard
 
 @app.get("/api/interviews")
-def list_interviews():
+def list_interviews(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -624,7 +661,57 @@ class SubmitFeedbackRequest(BaseModel):
     skills_to_verify: List[str]
 
 @app.post("/api/interviews/{interview_id}/feedback")
-def submit_interview_feedback(interview_id: str, feedback: SubmitFeedbackRequest):
+def submit_interview_feedback(interview_id: str, feedback: SubmitFeedbackRequest, current_user: dict = Depends(require_authenticated_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM interviews WHERE id = ?", (interview_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Interview not found")
+        
+    candidate_id = row["candidate_id"]
+    
+    # Update interview status
+    cursor.execute("""
+        UPDATE interviews 
+        SET status = 'Completed', evaluation_notes = ? 
+        WHERE id = ?
+    """, (feedback.notes, interview_id))
+    
+    # Verify candidate skills
+    cursor.execute("SELECT skills, data_confidence, name FROM candidates WHERE id = ?", (candidate_id,))
+    cand_row = cursor.fetchone()
+    if cand_row:
+        skills = json.loads(cand_row["skills"])
+        for s in skills:
+            if s["name"] in feedback.skills_to_verify:
+                s["type"] = "evidence-verified"
+                s["evidence_details"] = f"Verified by interviewer: {row['interviewer_name']} (Score: {feedback.score}/5). Notes: {feedback.notes}"
+                
+        new_confidence = min(0.99, cand_row["data_confidence"] + 0.15)
+        cursor.execute("UPDATE candidates SET skills = ?, data_confidence = ? WHERE id = ?", (json.dumps(skills), new_confidence, candidate_id))
+        
+        # Log strategic agent decision
+        AgentDecisionLogger.log_decision(
+            "Interview Evidence Agent", "Verify capability evidence based on interviewer feedback",
+            {"interview_id": interview_id, "score": feedback.score},
+            f"Interviewer verified skills: {feedback.skills_to_verify}. Candidate: {cand_row['name']}.",
+            "Rule: Verify skill declarations in DB matching feedback target lists.",
+            f"Successfully updated skills to evidence-verified. Trust index boosted.", 0.95, False
+        )
+        
+    conn.commit()
+    conn.close()
+    
+    publish_event("InterviewCompleted", "InterviewerPortal", {
+        "interview_id": interview_id,
+        "candidate_id": candidate_id,
+        "score": feedback.score
+    })
+    
+    return {"status": "success", "message": "Feedback submitted successfully"}
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -677,7 +764,7 @@ def submit_interview_feedback(interview_id: str, feedback: SubmitFeedbackRequest
     return {"status": "success", "message": "Feedback submitted successfully"}
 
 @app.get("/api/kam/duplications")
-def get_duplicate_submissions():
+def get_duplicate_submissions(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -709,7 +796,7 @@ def get_duplicate_submissions():
     return dups
 
 @app.post("/api/kam/duplications/{dup_id}/resolve")
-def resolve_duplication_dispute(dup_id: str, favoring_consultant_id: str):
+def resolve_duplication_dispute(dup_id: str, favoring_consultant_id: str, current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -742,7 +829,7 @@ def resolve_duplication_dispute(dup_id: str, favoring_consultant_id: str):
     return {"status": "success", "message": f"Conflict successfully resolved in favor of {favoring_consultant_id}."}
 
 @app.get("/api/kam/allocations")
-def get_allocations():
+def get_allocations(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -767,7 +854,7 @@ def get_allocations():
     return allocs
 
 @app.get("/api/kam/economics")
-def get_economics_twin():
+def get_economics_twin(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, target_compensation, vacancy_cost_daily, business_outcome FROM requirements")
@@ -795,7 +882,7 @@ def get_economics_twin():
     return econ_twins
 
 @app.get("/api/integrity/alerts")
-def get_integrity_alerts():
+def get_integrity_alerts(current_user: dict = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM integrity_alerts ORDER BY timestamp DESC")
@@ -819,7 +906,7 @@ class TriageAlertRequest(BaseModel):
     triage_notes: str
 
 @app.post("/api/integrity/alerts/{alert_id}/triage")
-def triage_integrity_alert(alert_id: str, req: TriageAlertRequest):
+def triage_integrity_alert(alert_id: str, req: TriageAlertRequest, current_user: dict = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -851,7 +938,7 @@ def triage_integrity_alert(alert_id: str, req: TriageAlertRequest):
     return {"status": "success", "message": f"Alert status triaged to {req.new_status}."}
 
 @app.get("/api/integrity/conflicts")
-def get_conflicts():
+def get_conflicts(current_user: dict = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM conflicts")
@@ -879,11 +966,11 @@ class DeclareConflictRequest(BaseModel):
     severity: str
 
 @app.post("/api/integrity/conflicts")
-def declare_conflict(req: DeclareConflictRequest):
+def declare_conflict(req: DeclareConflictRequest, current_user: dict = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    conflict_id = f"conf_{cursor.execute('SELECT COUNT(*) FROM conflicts').fetchone()[0] + 1}"
+    conflict_id = f"conf_{uuid.uuid4().hex[:8]}"
     
     cursor.execute("""
         INSERT INTO conflicts (id, party_1, party_2, relationship_type, declared_status, mitigation_plan, severity)
@@ -910,7 +997,7 @@ def declare_conflict(req: DeclareConflictRequest):
     return {"status": "success", "message": "Conflict of interest declared and registered."}
 
 @app.get("/api/overrides")
-def get_overrides():
+def get_overrides(current_user: dict = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM overrides ORDER BY timestamp DESC")
@@ -938,11 +1025,11 @@ class CreateOverrideRequest(BaseModel):
     conflict_declaration: bool
 
 @app.post("/api/overrides")
-def create_override(req: CreateOverrideRequest):
+def create_override(req: CreateOverrideRequest, current_user: dict = Depends(require_admin)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    override_id = f"over_{cursor.execute('SELECT COUNT(*) FROM overrides').fetchone()[0] + 1}"
+    override_id = f"over_{uuid.uuid4().hex[:8]}"
     
     cursor.execute("""
         INSERT INTO overrides (id, original_decision_id, overridden_by, reason, approver, conflict_declaration, timestamp)
@@ -976,7 +1063,8 @@ def create_override(req: CreateOverrideRequest):
     return {"status": "success", "message": "Manual override successfully registered and logged."}
 
 @app.post("/api/candidates/{cand_id}/delete-request")
-def delete_candidate_request(cand_id: str):
+def delete_candidate_request(cand_id: str, current_user: dict = Depends(require_authenticated_user)):
+    check_candidate_ownership(cand_id, current_user)
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -1035,7 +1123,7 @@ def delete_candidate_request(cand_id: str):
     }
 
 @app.get("/api/b2b/tenant-config")
-def get_tenant_config():
+def get_tenant_config(current_user: dict = Depends(require_authenticated_user)):
     return {
         "tenant_name": "Apex AI Lab (India)",
         "subscription_tier": "Enterprise Tier",
@@ -1051,7 +1139,7 @@ def get_tenant_config():
 # --- NEW ANALYTICS ENDPOINTS FOR PREDICTIVE & PRESCRIPTIVE ---
 
 @app.get("/api/analytics/predictive/{req_id}")
-def get_req_predictive_analytics(req_id: str):
+def get_req_predictive_analytics(req_id: str, current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT target_compensation, work_mode FROM requirements WHERE id = ?", (req_id,))
@@ -1090,7 +1178,7 @@ def get_req_predictive_analytics(req_id: str):
     }
 
 @app.get("/api/analytics/prescriptive/{req_id}")
-def get_req_prescriptive_analytics(req_id: str):
+def get_req_prescriptive_analytics(req_id: str, current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT target_compensation, essential_capabilities, work_mode FROM requirements WHERE id = ?", (req_id,))
@@ -1134,7 +1222,8 @@ def get_req_prescriptive_analytics(req_id: str):
     }
 
 @app.get("/api/analytics/candidate-predictive/{cand_id}")
-def get_candidate_predictive_analytics(cand_id: str):
+def get_candidate_predictive_analytics(cand_id: str, current_user: dict = Depends(require_authenticated_user)):
+    check_candidate_ownership(cand_id, current_user)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT name, skills, expected_salary FROM candidates WHERE id = ?", (cand_id,))
@@ -1161,7 +1250,8 @@ def get_candidate_predictive_analytics(cand_id: str):
     }
 
 @app.get("/api/analytics/candidate-prescriptive/{cand_id}")
-def get_candidate_prescriptive_analytics(cand_id: str):
+def get_candidate_prescriptive_analytics(cand_id: str, current_user: dict = Depends(require_authenticated_user)):
+    check_candidate_ownership(cand_id, current_user)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT skills, name FROM candidates WHERE id = ?", (cand_id,))
@@ -1213,7 +1303,7 @@ class OnboardingStepRequest(BaseModel):
     compliance_optin: bool
 
 @app.get("/api/onboarding")
-def list_onboardings():
+def list_onboardings(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM stakeholder_onboarding ORDER BY timestamp DESC")
@@ -1236,7 +1326,7 @@ def list_onboardings():
     return onbs
 
 @app.post("/api/onboarding")
-def submit_onboarding_step(req: OnboardingStepRequest):
+def submit_onboarding_step(req: OnboardingStepRequest, current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -1245,7 +1335,7 @@ def submit_onboarding_step(req: OnboardingStepRequest):
                    (req.stakeholder_name, req.role))
     row = cursor.fetchone()
     
-    status = "Completed" if req.step_progress >= 4 else "Pending"
+    status_val = "Completed" if req.step_progress >= 4 else "Pending"
     
     if row:
         onboard_id = row["id"]
@@ -1254,22 +1344,22 @@ def submit_onboarding_step(req: OnboardingStepRequest):
             SET step_progress = ?, completion_status = ?, capabilities_registered = ?, 
                 structural_assessment = ?, compliance_optin = ?, timestamp = ?
             WHERE id = ?
-        """, (req.step_progress, status, json.dumps(req.capabilities_registered), 
+        """, (req.step_progress, status_val, json.dumps(req.capabilities_registered), 
               json.dumps(req.structural_assessment), 1 if req.compliance_optin else 0, 
               datetime.now().isoformat(), onboard_id))
     else:
-        onboard_id = f"onb_{cursor.execute('SELECT COUNT(*) FROM stakeholder_onboarding').fetchone()[0] + 1}"
+        onboard_id = f"onb_{uuid.uuid4().hex[:8]}"
         cursor.execute("""
             INSERT INTO stakeholder_onboarding (id, stakeholder_name, role, step_progress, completion_status, 
-                                               capabilities_registered, structural_assessment, compliance_optin, timestamp)
+                                                capabilities_registered, structural_assessment, compliance_optin, timestamp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (onboard_id, req.stakeholder_name, req.role, req.step_progress, status, 
+        """, (onboard_id, req.stakeholder_name, req.role, req.step_progress, status_val, 
               json.dumps(req.capabilities_registered), json.dumps(req.structural_assessment), 
               1 if req.compliance_optin else 0, datetime.now().isoformat()))
               
     # Sync skills & profiles to database
-    if status == "Completed" and req.role == "Candidate":
-        cand_id = f"cand_{cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()[0] + 1}"
+    if status_val == "Completed" and req.role == "Candidate":
+        cand_id = f"cand_{uuid.uuid4().hex[:8]}"
         
         skills = []
         for sname in req.capabilities_registered:
@@ -1283,14 +1373,26 @@ def submit_onboarding_step(req: OnboardingStepRequest):
             
         cursor.execute("""
             INSERT INTO candidates (id, name, email, phone, status, notice_period_days, current_salary, expected_salary, 
-                                   location, remote_preference, skills, experience, career_goals, data_confidence, 
-                                   profile_freshness, consent_status)
+                                    location, remote_preference, skills, experience, career_goals, data_confidence, 
+                                    profile_freshness, consent_status)
             VALUES (?, ?, ?, ?, 'Discoverable', 30, 1000000.0, 1200000.0, 'Delhi', 'Remote', ?, ?, ?, 0.50, ?, ?)
         """, (cand_id, req.stakeholder_name, f"{req.stakeholder_name.lower().replace(' ', '')}@example.com", 
               "+91-9900990099", json.dumps(skills), json.dumps([]), 
               req.structural_assessment.get("career_direction", "Advance my engineering domain expertise."),
               datetime.now().isoformat(), 1 if req.compliance_optin else 0))
-              
+        
+    elif status_val == "Completed" and req.role == "Interviewer":
+        cons_id = f"con_{uuid.uuid4().hex[:8]}"
+        cursor.execute("""
+            INSERT INTO consultants (id, name, specialization, conversion_rate, satisfaction_score, gamified_points, gamified_level)
+            VALUES (?, ?, ?, 0.85, 4.5, 500, ?)
+        """, (cons_id, req.stakeholder_name, json.dumps(req.capabilities_registered), 
+              req.structural_assessment.get("interviewer_tier", "L2 Specialist")))
+
+    conn.commit()
+    conn.close()
+
+    if status_val == "Completed" and req.role == "Candidate":
         AgentDecisionLogger.log_decision(
             "GDPR Consent Twin Gateway", "Synchronize candidate onboarding to profile graph",
             {"onboarding_id": onboard_id, "new_candidate_id": cand_id},
@@ -1298,15 +1400,7 @@ def submit_onboarding_step(req: OnboardingStepRequest):
             "Rule: All completed onboarding candidate assessments must spawn searchable profile twins.",
             "Profile twin initialized with default trust metrics, notice period, and matching consent.", 0.90, False
         )
-        
-    elif status == "Completed" and req.role == "Interviewer":
-        cons_id = f"con_{cursor.execute('SELECT COUNT(*) FROM consultants').fetchone()[0] + 1}"
-        cursor.execute("""
-            INSERT INTO consultants (id, name, domain_specialties, submittal_accuracy, rating, cost_per_placement, level)
-            VALUES (?, ?, ?, 0.85, 4.5, 500, ?)
-        """, (cons_id, req.stakeholder_name, json.dumps(req.capabilities_registered), 
-              req.structural_assessment.get("interviewer_tier", "L2 Specialist")))
-              
+    elif status_val == "Completed" and req.role == "Interviewer":
         AgentDecisionLogger.log_decision(
             "Governance Consent Agent", "Register expert interviewer role profile",
             {"onboarding_id": onboard_id, "consultant_id": cons_id},
@@ -1314,22 +1408,19 @@ def submit_onboarding_step(req: OnboardingStepRequest):
             "Rule: Verified interviewers must have clear domain registry listings.",
             "Interviewer roster enrollment completed.", 0.95, False
         )
-
-    conn.commit()
-    conn.close()
     
     publish_event("StakeholderOnboarded", "OnboardingService", {
         "onboarding_id": onboard_id,
         "stakeholder_name": req.stakeholder_name,
         "role": req.role,
         "step_progress": req.step_progress,
-        "status": status
+        "status": status_val
     })
     
     return {"status": "success", "message": f"{req.role} onboarding step {req.step_progress} saved.", "onboarding_id": onboard_id}
 
 @app.get("/api/rag/search")
-def rag_semantic_search(query: str):
+def rag_semantic_search(query: str, current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, skills, career_goals FROM candidates")
@@ -1375,7 +1466,7 @@ def rag_semantic_search(query: str):
     return {"query": query, "results": results}
 
 @app.get("/api/graph/nodes")
-def get_knowledge_graph():
+def get_knowledge_graph(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM kg_edges")
@@ -1386,11 +1477,11 @@ def get_knowledge_graph():
     links = []
     
     for r in rows:
-        s = r["source"]
+        s = r["source_id"]
         st = r["source_type"]
-        t = r["target"]
+        t = r["target_id"]
         tt = r["target_type"]
-        rel = r["relation"]
+        rel = r["relationship"]
         w = r["weight"]
         
         nodes_dict[s] = {"id": s, "group": st}

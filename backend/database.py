@@ -2,7 +2,12 @@ import sqlite3
 import json
 import os
 from datetime import datetime
+from pathlib import Path
+import uuid
+from dotenv import load_dotenv
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 DB_PATH = "levelupwards.db"
@@ -17,11 +22,97 @@ class CompatRow(dict):
         return super().__getitem__(key)
 
 
-class PostgresCursorWrapper:
-    """Makes existing SQLite-style ? placeholders work with PostgreSQL."""
+class SQLiteCursorWrapper:
+    """Wraps sqlite3 cursor to support %s placeholders, dict/index row access, and context manager."""
 
     def __init__(self, cursor):
         self.cursor = cursor
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def _convert_query(self, query):
+        return query.replace("%s", "?")
+
+    def execute(self, query, params=None):
+        query = self._convert_query(query)
+        if params is None:
+            self.cursor.execute(query)
+        else:
+            self.cursor.execute(query, params)
+        return self
+
+    def executemany(self, query, params):
+        query = self._convert_query(query)
+        self.cursor.executemany(query, params)
+        return self
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        return CompatRow(dict(row)) if isinstance(row, sqlite3.Row) else (CompatRow(row) if isinstance(row, dict) else row)
+
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+        return [
+            CompatRow(dict(row)) if isinstance(row, sqlite3.Row) else (CompatRow(row) if isinstance(row, dict) else row)
+            for row in rows
+        ]
+
+    def close(self):
+        self.cursor.close()
+
+    def __getattr__(self, name):
+        return getattr(self.cursor, name)
+
+
+class SQLiteConnectionWrapper:
+    """Wraps sqlite3 connection to yield SQLiteCursorWrapper and handle commit/rollback."""
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()
+        self.close()
+
+    def cursor(self):
+        return SQLiteCursorWrapper(self.connection.cursor())
+
+    def commit(self):
+        self.connection.commit()
+
+    def rollback(self):
+        self.connection.rollback()
+
+    def close(self):
+        self.connection.close()
+
+    def __getattr__(self, name):
+        return getattr(self.connection, name)
+
+
+class PostgresCursorWrapper:
+    """Makes existing SQLite-style ? placeholders work with PostgreSQL, supports context manager."""
+
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _convert_query(self, query):
         return query.replace("?", "%s")
@@ -60,6 +151,9 @@ class PostgresCursorWrapper:
             for row in rows
         ]
 
+    def close(self):
+        self.cursor.close()
+
     def __getattr__(self, name):
         return getattr(self.cursor, name)
 
@@ -69,6 +163,16 @@ class PostgresConnectionWrapper:
 
     def __init__(self, connection):
         self.connection = connection
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()
+        self.close()
 
     def cursor(self):
         from psycopg.rows import dict_row
@@ -86,21 +190,27 @@ class PostgresConnectionWrapper:
     def close(self):
         self.connection.close()
 
+    def __getattr__(self, name):
+        return getattr(self.connection, name)
+
 
 def get_db_connection():
-    # Production: PostgreSQL / Neon
+    is_production = os.getenv("ENVIRONMENT", "").lower() == "production" or bool(os.getenv("VERCEL"))
+    if is_production and not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL environment variable is required in production environment.")
+
+    # Production / Configured: PostgreSQL / Neon
     if DATABASE_URL:
         import psycopg
         conn = psycopg.connect(DATABASE_URL)
         return PostgresConnectionWrapper(conn)
 
-    # Local development: SQLite
+    # Local development fallback: SQLite
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
-    return conn
+    return SQLiteConnectionWrapper(conn)
 
- 
 
 def init_db():
     conn = get_db_connection()
@@ -773,6 +883,20 @@ def seed_data():
     ]
     cursor.executemany("INSERT INTO stakeholder_onboarding VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", onboardings)
     
+    # 22. Development Seed Users (Local development SQLite only)
+    cursor.execute("SELECT COUNT(*) FROM users")
+    user_count = cursor.fetchone()[0]
+    if user_count == 0:
+        import bcrypt
+        dev_hash = bcrypt.hashpw(b"dev_local_password_only", bcrypt.gensalt()).decode("utf-8")
+        now_ts = datetime.now().isoformat()
+        dev_users = [
+            ("usr_dev_admin", "Dev Administrator", "dev_admin@levelupwards.local", dev_hash, "administrator", 1, now_ts, None),
+            ("usr_dev_recruiter", "Dev Recruiter", "dev_recruiter@levelupwards.local", dev_hash, "recruiter", 1, now_ts, None),
+            ("usr_dev_candidate", "Siddharth Sharma", "sid@example.com", dev_hash, "user", 1, now_ts, None)
+        ]
+        cursor.executemany("INSERT INTO users (id, name, email, password_hash, role, is_active, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", dev_users)
+
     conn.commit()
     conn.close()
 

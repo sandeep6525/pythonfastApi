@@ -366,366 +366,345 @@
         <div id="errorMessage" class="error-message"></div>
 
     </div>
-    <!-- =========================================================
-     REQUIREMENT ANALYTICS CHART
-     ========================================================= -->
-
-    <div class="chart-section">
-
-        <div class="chart-header">
-            <div>
-                <h2>Requirement Analytics</h2>
-                <p>Cost exposure and time-to-fill analysis</p>
-            </div>
-
-            <span class="chart-status">
-                ● Analytics
-            </span>
-        </div>
-
-        <div class="chart-container">
-            <canvas id="requirementAnalyticsChart"></canvas>
-        </div>
-
-    </div>
-    <!-- =========================
+    
+        <!-- =========================
          STATISTICS
     ========================== -->
 
-    <div class="cards">
+        <div class="cards">
 
-        <div class="card">
-            <h3>Total Users</h3>
-            <div class="number" id="totalUsers">0</div>
+            <div class="card">
+                <h3>Total Users</h3>
+                <div class="number" id="totalUsers">0</div>
+            </div>
+
+            <div class="card">
+                <h3>Active Users</h3>
+                <div class="number" id="activeUsers">0</div>
+            </div>
+
+            <div class="card">
+                <h3>Administrators</h3>
+                <div class="number" id="adminUsers">0</div>
+            </div>
+
+            <div class="card">
+                <h3>Recruiters</h3>
+                <div class="number" id="recruiterUsers">0</div>
+            </div>
+
         </div>
 
-        <div class="card">
-            <h3>Active Users</h3>
-            <div class="number" id="activeUsers">0</div>
-        </div>
 
-        <div class="card">
-            <h3>Administrators</h3>
-            <div class="number" id="adminUsers">0</div>
-        </div>
-
-        <div class="card">
-            <h3>Recruiters</h3>
-            <div class="number" id="recruiterUsers">0</div>
-        </div>
-
-    </div>
-
-
-    <!-- =========================
+        <!-- =========================
          USER MANAGEMENT
     ========================== -->
 
-    <div class="section">
+        <div class="section">
 
-        <div class="section-header">
+            <div class="section-header">
 
-            <h2>User Management</h2>
+                <h2>User Management</h2>
 
-            <button onclick="loadDashboard()" class="refresh-button">
-                Refresh
-            </button>
+                <button onclick="loadDashboard()" class="refresh-button">
+                    Refresh
+                </button>
+
+            </div>
+
+
+            <!-- FILTERS -->
+
+            <div class="filters">
+
+                <!-- SEARCH -->
+
+                <input type="text" id="searchInput" placeholder="Search name or email..." oninput="filterUsers()">
+
+
+                <!-- ROLE FILTER -->
+
+                <select id="roleFilter" onchange="filterUsers()">
+
+                    <option value="all">
+                        All Roles
+                    </option>
+
+                    <option value="administrator">
+                        Administrator
+                    </option>
+
+                    <option value="admin">
+                        Admin
+                    </option>
+
+                    <option value="recruiter">
+                        Recruiter
+                    </option>
+
+                    <option value="user">
+                        User
+                    </option>
+
+                </select>
+
+
+                <!-- STATUS FILTER -->
+
+                <select id="statusFilter" onchange="filterUsers()">
+
+                    <option value="all">
+                        All Status
+                    </option>
+
+                    <option value="active">
+                        Active
+                    </option>
+
+                    <option value="inactive">
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- USER TABLE -->
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Name</th>
+
+                        <th>Email</th>
+
+                        <th>Role</th>
+
+                        <th>Status</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="usersTable">
+
+                </tbody>
+
+            </table>
 
         </div>
 
 
-        <!-- FILTERS -->
+        <script>
 
-        <div class="filters">
+            /* =====================================================
+               GET TOKEN
+            ===================================================== */
 
-            <!-- SEARCH -->
+            function getToken() {
 
-            <input type="text" id="searchInput" placeholder="Search name or email..." oninput="filterUsers()">
+                return localStorage.getItem("access_token");
 
-
-            <!-- ROLE FILTER -->
-
-            <select id="roleFilter" onchange="filterUsers()">
-
-                <option value="all">
-                    All Roles
-                </option>
-
-                <option value="administrator">
-                    Administrator
-                </option>
-
-                <option value="admin">
-                    Admin
-                </option>
-
-                <option value="recruiter">
-                    Recruiter
-                </option>
-
-                <option value="user">
-                    User
-                </option>
-
-            </select>
-
-
-            <!-- STATUS FILTER -->
-
-            <select id="statusFilter" onchange="filterUsers()">
-
-                <option value="all">
-                    All Status
-                </option>
-
-                <option value="active">
-                    Active
-                </option>
-
-                <option value="inactive">
-                    Inactive
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <!-- USER TABLE -->
-
-        <table>
-
-            <thead>
-
-                <tr>
-
-                    <th>ID</th>
-
-                    <th>Name</th>
-
-                    <th>Email</th>
-
-                    <th>Role</th>
-
-                    <th>Status</th>
-
-                    <th>Action</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody id="usersTable">
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-
-    <script>
-
-        /* =====================================================
-           GET TOKEN
-        ===================================================== */
-
-        function getToken() {
-
-            return localStorage.getItem("access_token");
-
-        }
-
-
-        /* =====================================================
-           AUTH HEADERS
-        ===================================================== */
-
-        function getAuthHeaders() {
-
-            const token = getToken();
-
-            return {
-                "Accept": "application/json",
-                "Authorization": "Bearer " + token
-            };
-
-        }
-
-
-        /* =====================================================
-           LOAD ADMIN DASHBOARD
-        ===================================================== */
-        async function loadDashboard() {
-
-            const token = getToken();
-
-            if (!token) {
-                window.location.href = "/login";
-                return;
             }
 
-            hideError();
 
-            try {
+            /* =====================================================
+               AUTH HEADERS
+            ===================================================== */
 
-                /*
-                 * ==============================================
-                 * 1. GET ADMIN STATISTICS
-                 * ==============================================
-                 */
+            function getAuthHeaders() {
 
-                const statsResponse = await fetch(
-                    "/api/admin/stats",
-                    {
-                        method: "GET",
-                        headers: getAuthHeaders()
-                    }
-                );
+                const token = getToken();
 
-                if (statsResponse.status === 401) {
-                    logout();
+                return {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer " + token
+                };
+
+            }
+
+
+            /* =====================================================
+               LOAD ADMIN DASHBOARD
+            ===================================================== */
+            async function loadDashboard() {
+
+                const token = getToken();
+
+                if (!token) {
+                    window.location.href = "/login";
                     return;
                 }
 
-                if (statsResponse.status === 403) {
+                hideError();
+
+                try {
+
+                    /*
+                     * ==============================================
+                     * 1. GET ADMIN STATISTICS
+                     * ==============================================
+                     */
+
+                    const statsResponse = await fetch(
+                        "/api/admin/stats",
+                        {
+                            method: "GET",
+                            headers: getAuthHeaders()
+                        }
+                    );
+
+                    if (statsResponse.status === 401) {
+                        logout();
+                        return;
+                    }
+
+                    if (statsResponse.status === 403) {
+
+                        showError(
+                            "Administrator access required."
+                        );
+
+                        return;
+                    }
+
+                    if (!statsResponse.ok) {
+
+                        throw new Error(
+                            "Failed to load admin statistics"
+                        );
+                    }
+
+                    const stats =
+                        await statsResponse.json();
+
+
+                    /*
+                     * ==============================================
+                     * UPDATE STATISTICS CARDS
+                     * ==============================================
+                     */
+
+                    document.getElementById("totalUsers").textContent =
+                        stats.total_users ?? 0;
+
+                    document.getElementById("activeUsers").textContent =
+                        stats.active_users ?? 0;
+
+                    document.getElementById("adminUsers").textContent =
+                        stats.administrators ?? 0;
+
+                    document.getElementById("recruiterUsers").textContent =
+                        stats.recruiters ?? 0;
+
+
+                    /*
+                     * ==============================================
+                     * 2. GET ALL USERS
+                     * ==============================================
+                     */
+
+                    const usersResponse = await fetch(
+                        "/api/admin/users",
+                        {
+                            method: "GET",
+                            headers: getAuthHeaders()
+                        }
+                    );
+
+                    if (usersResponse.status === 401) {
+                        logout();
+                        return;
+                    }
+
+                    if (usersResponse.status === 403) {
+
+                        showError(
+                            "Administrator access required."
+                        );
+
+                        return;
+                    }
+
+                    if (!usersResponse.ok) {
+
+                        throw new Error(
+                            "Failed to load users"
+                        );
+                    }
+
+                    const data =
+                        await usersResponse.json();
+
+
+                    /*
+                     * ==============================================
+                     * SAVE USERS
+                     * ==============================================
+                     */
+
+                    allUsers = data.users || [];
+
+
+                    /*
+                     * ==============================================
+                     * DISPLAY USERS
+                     * ==============================================
+                     */
+
+                    displayUsers(allUsers);
+
+                }
+
+                catch (error) {
+
+                    console.error(
+                        "Dashboard error:",
+                        error
+                    );
 
                     showError(
-                        "Administrator access required."
-                    );
-
-                    return;
-                }
-
-                if (!statsResponse.ok) {
-
-                    throw new Error(
-                        "Failed to load admin statistics"
+                        "Unable to load dashboard data. Please try again."
                     );
                 }
-
-                const stats =
-                    await statsResponse.json();
-
-
-                /*
-                 * ==============================================
-                 * UPDATE STATISTICS CARDS
-                 * ==============================================
-                 */
-
-                document.getElementById("totalUsers").textContent =
-                    stats.total_users ?? 0;
-
-                document.getElementById("activeUsers").textContent =
-                    stats.active_users ?? 0;
-
-                document.getElementById("adminUsers").textContent =
-                    stats.administrators ?? 0;
-
-                document.getElementById("recruiterUsers").textContent =
-                    stats.recruiters ?? 0;
-
-
-                /*
-                 * ==============================================
-                 * 2. GET ALL USERS
-                 * ==============================================
-                 */
-
-                const usersResponse = await fetch(
-                    "/api/admin/users",
-                    {
-                        method: "GET",
-                        headers: getAuthHeaders()
-                    }
-                );
-
-                if (usersResponse.status === 401) {
-                    logout();
-                    return;
-                }
-
-                if (usersResponse.status === 403) {
-
-                    showError(
-                        "Administrator access required."
-                    );
-
-                    return;
-                }
-
-                if (!usersResponse.ok) {
-
-                    throw new Error(
-                        "Failed to load users"
-                    );
-                }
-
-                const data =
-                    await usersResponse.json();
-
-
-                /*
-                 * ==============================================
-                 * SAVE USERS
-                 * ==============================================
-                 */
-
-                allUsers = data.users || [];
-
-
-                /*
-                 * ==============================================
-                 * DISPLAY USERS
-                 * ==============================================
-                 */
-
-                displayUsers(allUsers);
-
             }
 
-            catch (error) {
-
-                console.error(
-                    "Dashboard error:",
-                    error
-                );
-
-                showError(
-                    "Unable to load dashboard data. Please try again."
-                );
-            }
-        }
 
 
 
+            function displayUsers(users) {
 
-        function displayUsers(users) {
+                const table =
+                    document.getElementById("usersTable");
 
-            const table =
-                document.getElementById("usersTable");
-
-            table.innerHTML = "";
-
-
-            /*
-             * CURRENT LOGGED-IN USER
-             */
-
-            const currentUser =
-                JSON.parse(
-                    localStorage.getItem("user") || "null"
-                );
+                table.innerHTML = "";
 
 
-            /*
-             * NO USERS
-             */
+                /*
+                 * CURRENT LOGGED-IN USER
+                 */
 
-            if (users.length === 0) {
+                const currentUser =
+                    JSON.parse(
+                        localStorage.getItem("user") || "null"
+                    );
 
-                table.innerHTML = `
+
+                /*
+                 * NO USERS
+                 */
+
+                if (users.length === 0) {
+
+                    table.innerHTML = `
             <tr>
                 <td colspan="6"
                     style="text-align:center; padding:25px;">
@@ -734,26 +713,26 @@
             </tr>
         `;
 
-                return;
-            }
+                    return;
+                }
 
 
-            /*
-             * DISPLAY USERS
-             */
+                /*
+                 * DISPLAY USERS
+                 */
 
-            users.forEach(user => {
+                users.forEach(user => {
 
-                const row =
-                    document.createElement("tr");
-
-
-                const isCurrentUser =
-                    currentUser &&
-                    Number(user.id) === Number(currentUser.id);
+                    const row =
+                        document.createElement("tr");
 
 
-                row.innerHTML = `
+                    const isCurrentUser =
+                        currentUser &&
+                        Number(user.id) === Number(currentUser.id);
+
+
+                    row.innerHTML = `
 
             <td>
                 ${escapeHtml(user.id)}
@@ -776,14 +755,14 @@
             <td>
 
                 <span class="${user.is_active
-                        ? "active-status"
-                        : "inactive-status"
-                    }">
+                            ? "active-status"
+                            : "inactive-status"
+                        }">
 
                     ${user.is_active
-                        ? "Active"
-                        : "Inactive"
-                    }
+                            ? "Active"
+                            : "Inactive"
+                        }
 
                 </span>
 
@@ -793,251 +772,251 @@
 
                 ${isCurrentUser
 
-                        ?
+                            ?
 
-                        `<span>Current User</span>`
+                            `<span>Current User</span>`
 
-                        :
+                            :
 
-                        `
+                            `
                     <button
                         class="status-button"
                         onclick="changeUserStatus(${user.id})"
                     >
                         ${user.is_active
-                            ? "Deactivate"
-                            : "Activate"
-                        }
+                                ? "Deactivate"
+                                : "Activate"
+                            }
                     </button>
                     `
-                    }
+                        }
 
             </td>
 
         `;
 
-                table.appendChild(row);
-            });
-        }
-        function filterUsers() {
-
-            const searchInput =
-                document.getElementById("searchInput");
-
-            const roleFilter =
-                document.getElementById("roleFilter");
-
-            const statusFilter =
-                document.getElementById("statusFilter");
-
-
-            const search =
-                searchInput
-                    ? searchInput.value.toLowerCase().trim()
-                    : "";
-
-
-            const selectedRole =
-                roleFilter
-                    ? roleFilter.value
-                    : "all";
-
-
-            const selectedStatus =
-                statusFilter
-                    ? statusFilter.value
-                    : "all";
-
-
-            /*
-             * FILTER USERS
-             */
-
-            const filteredUsers =
-                allUsers.filter(user => {
-
-
-                    /*
-                     * SEARCH
-                     */
-
-                    const name =
-                        String(user.name || "")
-                            .toLowerCase();
-
-                    const email =
-                        String(user.email || "")
-                            .toLowerCase();
-
-
-                    const matchesSearch =
-                        name.includes(search) ||
-                        email.includes(search);
-
-
-                    /*
-                     * ROLE
-                     */
-
-                    const matchesRole =
-                        selectedRole === "all" ||
-                        user.role === selectedRole;
-
-
-                    /*
-                     * STATUS
-                     */
-
-                    let matchesStatus = true;
-
-
-                    if (selectedStatus === "active") {
-
-                        matchesStatus =
-                            user.is_active === true;
-
-                    }
-
-
-                    if (selectedStatus === "inactive") {
-
-                        matchesStatus =
-                            user.is_active === false;
-
-                    }
-
-
-                    return (
-                        matchesSearch &&
-                        matchesRole &&
-                        matchesStatus
-                    );
-
+                    table.appendChild(row);
                 });
-
-
-            /*
-             * DISPLAY FILTERED USERS
-             */
-
-            displayUsers(filteredUsers);
-        }
-
-
-        /* =====================================================
-           ESCAPE HTML
-        ===================================================== */
-
-        function escapeHtml(value) {
-
-            if (value === null || value === undefined) {
-
-                return "";
-
             }
+            function filterUsers() {
 
-            return String(value)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+                const searchInput =
+                    document.getElementById("searchInput");
 
-        }
+                const roleFilter =
+                    document.getElementById("roleFilter");
 
-
-        /* =====================================================
-           ERROR MESSAGE
-        ===================================================== */
-
-        function showError(message) {
-
-            const error =
-                document.getElementById("errorMessage");
-
-            error.textContent = message;
-
-            error.style.display = "block";
-
-        }
+                const statusFilter =
+                    document.getElementById("statusFilter");
 
 
-        function hideError() {
-
-            const error =
-                document.getElementById("errorMessage");
-
-            error.style.display = "none";
-
-        }
+                const search =
+                    searchInput
+                        ? searchInput.value.toLowerCase().trim()
+                        : "";
 
 
-        /* =====================================================
-           LOGOUT
-        ===================================================== */
-
-        function logout() {
-
-            localStorage.removeItem("access_token");
-
-            window.location.href = "/login";
-
-        }
+                const selectedRole =
+                    roleFilter
+                        ? roleFilter.value
+                        : "all";
 
 
-        /* =====================================================
-           START DASHBOARD
-        ===================================================== */
-        let allUsers = [];
-        loadDashboard();
+                const selectedStatus =
+                    statusFilter
+                        ? statusFilter.value
+                        : "all";
 
 
-        async function changeUserStatus(userId) {
+                /*
+                 * FILTER USERS
+                 */
 
-            const token = localStorage.getItem("access_token");
+                const filteredUsers =
+                    allUsers.filter(user => {
 
-            if (!token) {
-                window.location.href = "/login";
-                return;
-            }
 
-            try {
+                        /*
+                         * SEARCH
+                         */
 
-                const response = await fetch(
-                    `/api/admin/users/${userId}/status`,
-                    {
-                        method: "PUT",
-                        headers: {
-                            "Authorization": "Bearer " + token
+                        const name =
+                            String(user.name || "")
+                                .toLowerCase();
+
+                        const email =
+                            String(user.email || "")
+                                .toLowerCase();
+
+
+                        const matchesSearch =
+                            name.includes(search) ||
+                            email.includes(search);
+
+
+                        /*
+                         * ROLE
+                         */
+
+                        const matchesRole =
+                            selectedRole === "all" ||
+                            user.role === selectedRole;
+
+
+                        /*
+                         * STATUS
+                         */
+
+                        let matchesStatus = true;
+
+
+                        if (selectedStatus === "active") {
+
+                            matchesStatus =
+                                user.is_active === true;
+
                         }
-                    }
-                );
 
-                const data = await response.json();
 
-                if (!response.ok) {
+                        if (selectedStatus === "inactive") {
 
-                    alert(data.detail || "Unable to change user status");
+                            matchesStatus =
+                                user.is_active === false;
 
+                        }
+
+
+                        return (
+                            matchesSearch &&
+                            matchesRole &&
+                            matchesStatus
+                        );
+
+                    });
+
+
+                /*
+                 * DISPLAY FILTERED USERS
+                 */
+
+                displayUsers(filteredUsers);
+            }
+
+
+            /* =====================================================
+               ESCAPE HTML
+            ===================================================== */
+
+            function escapeHtml(value) {
+
+                if (value === null || value === undefined) {
+
+                    return "";
+
+                }
+
+                return String(value)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+            }
+
+
+            /* =====================================================
+               ERROR MESSAGE
+            ===================================================== */
+
+            function showError(message) {
+
+                const error =
+                    document.getElementById("errorMessage");
+
+                error.textContent = message;
+
+                error.style.display = "block";
+
+            }
+
+
+            function hideError() {
+
+                const error =
+                    document.getElementById("errorMessage");
+
+                error.style.display = "none";
+
+            }
+
+
+            /* =====================================================
+               LOGOUT
+            ===================================================== */
+
+            function logout() {
+
+                localStorage.removeItem("access_token");
+
+                window.location.href = "/login";
+
+            }
+
+
+            /* =====================================================
+               START DASHBOARD
+            ===================================================== */
+            let allUsers = [];
+            loadDashboard();
+
+
+            async function changeUserStatus(userId) {
+
+                const token = localStorage.getItem("access_token");
+
+                if (!token) {
+                    window.location.href = "/login";
                     return;
                 }
 
-                alert(data.message);
+                try {
 
-                // Reload dashboard
-                loadDashboard();
+                    const response = await fetch(
+                        `/api/admin/users/${userId}/status`,
+                        {
+                            method: "PUT",
+                            headers: {
+                                "Authorization": "Bearer " + token
+                            }
+                        }
+                    );
 
+                    const data = await response.json();
+
+                    if (!response.ok) {
+
+                        alert(data.detail || "Unable to change user status");
+
+                        return;
+                    }
+
+                    alert(data.message);
+
+                    // Reload dashboard
+                    loadDashboard();
+
+                }
+                catch (error) {
+
+                    console.error(error);
+
+                    alert("Unable to connect to server");
+                }
             }
-            catch (error) {
-
-                console.error(error);
-
-                alert("Unable to connect to server");
-            }
-        }
 
 
-    </script>
+        </script>
 
 </body>
 
