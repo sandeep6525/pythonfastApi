@@ -168,6 +168,36 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+
+@app.get("/recruiter")
+def recruiter_dashboard(request: Request):
+    token = request.cookies.get("access_token")
+
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
+
+    if not token:
+        return FileResponse(STATIC_DIR / "login.html")
+
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALGORITHM]
+        )
+
+        if payload.get("role") not in ("recruiter", "administrator"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Recruiter access required"
+            )
+
+        return FileResponse(STATIC_DIR / "recruiter-dashboard.html")
+
+    except JWTError:
+        return FileResponse(STATIC_DIR / "login.html")
 # =========================
 # ENTRY POINT
 # =========================

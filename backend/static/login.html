@@ -204,15 +204,11 @@
 
     </div>
 
-
     <script>
 
         const loginForm = document.getElementById("loginForm");
-
         const loginButton = document.getElementById("loginButton");
-
         const errorMessage = document.getElementById("errorMessage");
-
 
         loginForm.addEventListener("submit", async function (event) {
 
@@ -221,19 +217,11 @@
             errorMessage.textContent = "";
 
             loginButton.disabled = true;
-
             loginButton.textContent = "Logging in...";
 
-
-            const role =
-                document.getElementById("role").value;
-
-            const email =
-                document.getElementById("email").value.trim();
-
-            const password =
-                document.getElementById("password").value;
-
+            const role = document.getElementById("role").value;
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
 
             try {
 
@@ -253,9 +241,7 @@
 
                 });
 
-
                 const data = await response.json();
-
 
                 if (!response.ok) {
 
@@ -265,13 +251,11 @@
                     return;
                 }
 
-
                 // Save JWT token
                 localStorage.setItem(
                     "access_token",
                     data.access_token
                 );
-
 
                 // Save user information
                 localStorage.setItem(
@@ -279,22 +263,35 @@
                     JSON.stringify(data.user)
                 );
 
-
+                // =========================
+                // ROLE-BASED REDIRECT
+                // =========================
                 // Login successful
                 if (data.user.role === "administrator") {
 
+                    // Administrator
                     window.location.href = "/admin";
+
+                } else if (data.user.role === "recruiter") {
+
+                    // Recruiter
+                    window.location.href = "/recruiter";
+
+                } else if (data.user.role === "user") {
+
+                    // User → your dashboard/index.html
+                    window.location.href = "/static/index.html";
 
                 } else {
 
-                    window.location.href = "/";
+                    errorMessage.textContent = "Unknown user role";
 
                 }
 
             }
             catch (error) {
 
-                console.error(error);
+                console.error("Login error:", error);
 
                 errorMessage.textContent =
                     "Unable to connect to server";
@@ -303,7 +300,6 @@
             finally {
 
                 loginButton.disabled = false;
-
                 loginButton.textContent = "Login";
 
             }
@@ -311,7 +307,6 @@
         });
 
     </script>
-
 </body>
 
 </html>
