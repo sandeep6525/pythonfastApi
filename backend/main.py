@@ -218,6 +218,152 @@ def home():
 
     return response
     # ----------------- API ROUTES -----------------
+# ============================================================
+# CREATE REQUIREMENT
+# ============================================================
+
+class CreateRequirementRequest(BaseModel):
+    business_outcome: str
+    work_mode: str = "Remote"
+    urgency: str = "Medium"
+    target_compensation: float = 0
+    vacancy_cost_daily: float = 0
+    essential_capabilities: List[str] = []
+    preferred_capabilities: List[str] = []
+
+
+@app.post("/api/requirements")
+def create_requirement(
+    req: CreateRequirementRequest,
+    current_user: dict = Depends(require_recruiter)
+):
+    business_outcome = req.business_outcome.strip()
+
+    if not business_outcome:
+        raise HTTPException(
+            status_code=400,
+            detail="Requirement / Business Outcome is required"
+        )
+
+    if req.target_compensation < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Target compensation cannot be negative"
+        )
+
+    if req.vacancy_cost_daily < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Vacancy cost cannot be negative"
+        )
+
+    requirement_id = str(uuid.uuid4())
+
+    # Use employer_id if available.
+    # Otherwise fall back to the authenticated recruiter ID.
+    employer_id = str(
+        current_user.get("employer_id")
+        or current_user.get("id")
+        or current_user.get("email")
+        or "unknown"
+    )
+
+    essential = [
+        str(skill).strip()
+        for skill in req.essential_capabilities
+        if str(skill).strip()
+    ]
+
+    preferred = [
+        str(skill).strip()
+        for skill in req.preferred_capabilities
+        if str(skill).strip()
+    ]
+
+    conn = get_db_connection()
+
+    try:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO requirements (
+                id,
+                employer_id,
+                business_outcome,
+                vacancy_cost_daily,
+                essential_capabilities,
+                preferred_capabilities,
+                target_compensation,
+                work_mode,
+                urgency,
+                status,
+                alternatives_considered
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                requirement_id,
+                employer_id,
+                business_outcome,
+                req.vacancy_cost_daily,
+                json.dumps(essential),
+                json.dumps(preferred),
+                req.target_compensation,
+                req.work_mode,
+                req.urgency,
+                "Active",
+                json.dumps([])
+            )
+        )
+
+        conn.commit()
+
+    except Exception as error:
+        conn.rollback()
+
+        print(
+            "Unable to create requirement:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to create requirement"
+        )
+
+    finally:
+        conn.close()
+
+    # Publish event after successful database creation
+    try:
+        publish_event(
+            "RequirementCreated",
+            "RecruiterPortal",
+            {
+                "requirement_id": requirement_id,
+                "employer_id": employer_id,
+                "business_outcome": business_outcome
+            }
+        )
+    except Exception as error:
+        print(
+            "Requirement event publishing failed:",
+            error
+        )
+
+    return {
+        "id": requirement_id,
+        "employer_id": employer_id,
+        "business_outcome": business_outcome,
+        "vacancy_cost_daily": req.vacancy_cost_daily,
+        "essential_capabilities": essential,
+        "preferred_capabilities": preferred,
+        "target_compensation": req.target_compensation,
+        "work_mode": req.work_mode,
+        "urgency": req.urgency,
+        "status": "Active"
+    }
 
 @app.get("/api/requirements")
 def list_requirements(current_user: dict = Depends(require_authenticated_user)):
@@ -392,6 +538,181 @@ def get_candidate(cand_id: str, req_id: Optional[str] = "req_1", current_user: d
         "negotiation_simulation": negotiation
     }
 
+
+# ============================================================
+# RECRUITER DASHBOARD SUMMARY
+# ============================================================
+
+@app.get("/api/recruiter/dashboard")
+def recruiter_dashboard_summary(
+    current_user: dict = Depends(require_recruiter)
+):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # ----------------------------------------------------
+        # REQUIREMENTS
+        # ----------------------------------------------------
+        cursor.execute(
+            """
+            SELECT
+                COUNT(*) AS total,
+                SUM(
+                    CASE
+                        WHEN LOWER(status) IN ('active', 'open')
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS active
+            FROM requirements
+            """
+        )
+
+        requirement_stats = cursor.fetchone()
+
+        requirements_total = requirement_stats["total"] or 0
+        requirements_active = requirement_stats["active"] or 0
+
+        # ----------------------------------------------------
+        # CANDIDATES
+        # ----------------------------------------------------
+        cursor.execute(
+            "SELECT COUNT(*) AS total FROM candidates"
+        )
+
+        candidate_stats = cursor.fetchone()
+        candidates_total = candidate_stats["total"] or 0
+
+        # ----------------------------------------------------
+        # SHORTLISTED
+        # ----------------------------------------------------
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total
+            FROM candidates
+            WHERE LOWER(status) = 'shortlisted'
+            """
+        )
+
+        shortlisted = cursor.fetchone()["total"] or 0
+
+        # ----------------------------------------------------
+        # INTERVIEWS
+        # ----------------------------------------------------
+        cursor.execute(
+            "SELECT COUNT(*) AS total FROM interviews"
+        )
+
+        interviews_total = cursor.fetchone()["total"] or 0
+
+        # ----------------------------------------------------
+        # INTERVIEWS TODAY
+        # ----------------------------------------------------
+        today = datetime.now().date().isoformat()
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total
+            FROM interviews
+            WHERE DATE(scheduled_time) = ?
+            """,
+            (today,)
+        )
+
+        interviews_today = cursor.fetchone()["total"] or 0
+
+        # ----------------------------------------------------
+        # HIRING PIPELINE
+        # ----------------------------------------------------
+        pipeline_stages = [
+            "Applied",
+            "Screening",
+            "Shortlisted",
+            "Interview",
+            "Offer"
+        ]
+
+        pipeline = []
+
+        for stage in pipeline_stages:
+
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS total
+                FROM candidates
+                WHERE LOWER(status) = LOWER(?)
+                """,
+                (stage,)
+            )
+
+            count = cursor.fetchone()["total"] or 0
+
+            percentage = (
+                (count / candidates_total) * 100
+                if candidates_total > 0
+                else 0
+            )
+
+            pipeline.append({
+                "stage": stage,
+                "count": count,
+                "percentage": round(percentage, 1)
+            })
+
+        # ----------------------------------------------------
+        # DASHBOARD ALERTS
+        # ----------------------------------------------------
+        alerts = []
+
+        if requirements_active == 0:
+            alerts.append({
+                "severity": "info",
+                "title": "No active requirements",
+                "message": "Create or activate a hiring requirement."
+            })
+
+        if candidates_total == 0:
+            alerts.append({
+                "severity": "medium",
+                "title": "No candidates",
+                "message": "Your candidate pool is currently empty."
+            })
+
+        if interviews_today > 0:
+            alerts.append({
+                "severity": "info",
+                "title": "Interviews scheduled",
+                "message": (
+                    f"{interviews_today} interview(s) "
+                    "scheduled today."
+                )
+            })
+
+        # ----------------------------------------------------
+        # FINAL RESPONSE
+        # ----------------------------------------------------
+        return {
+            "requirements": {
+                "total": requirements_total,
+                "active": requirements_active
+            },
+            "candidates": {
+                "total": candidates_total
+            },
+            "shortlisted": shortlisted,
+            "interviews": {
+                "total": interviews_total,
+                "today": interviews_today
+            },
+            "pipeline": pipeline,
+            "alerts": alerts
+        }
+
+    finally:
+        conn.close()
+
+        
 @app.get("/api/candidates/{cand_id}/match/{req_id}")
 def match_candidate(cand_id: str, req_id: str, current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
