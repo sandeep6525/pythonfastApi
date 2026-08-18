@@ -1,569 +1,275 @@
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
+    <head>
+        <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Recruiter Dashboard | Levelupwards</title>
+        <title>Recruiter Dashboard | Levelupwards</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        body {
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-                BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f6f8fc;
-        }
-
-        .sidebar-item {
-            transition: all 0.2s ease;
-        }
-
-        .sidebar-item:hover {
-            background: #eef2ff;
-            color: #4f46e5;
-        }
-
-        .sidebar-item.active {
-            background: #111827;
-            color: white;
-        }
-
-        .card {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-        }
-
-        html {
-            overflow-x: hidden;
-        }
-
-        body {
-            overflow-x: hidden;
-        }
-
-        @media (max-width: 767px) {
-            .card {
-                border-radius: 14px;
+        <style>
+            body {
+                font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+                    BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background: #f6f8fc;
             }
-        }
-    </style>
-</head>
 
-<body class="text-slate-900">
+            .sidebar-item {
+                transition: all 0.2s ease;
+            }
 
-    <div class="min-h-screen flex">
+            .sidebar-item:hover {
+                background: #eef2ff;
+                color: #4f46e5;
+            }
 
-        <!-- ===================================================== -->
-        <!-- SIDEBAR -->
-        <!-- ===================================================== -->
+            .sidebar-item.active {
+                background: #111827;
+                color: white;
+            }
 
-        <!-- ===================================================== -->
-        <!-- MOBILE SIDEBAR OVERLAY -->
-        <!-- ===================================================== -->
+            .card {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 16px;
+            }
 
-        <div id="sidebarOverlay" class="fixed inset-0 bg-slate-950/40 z-40 hidden md:hidden"
-            onclick="closeMobileSidebar()"></div>
+            html {
+                overflow-x: hidden;
+            }
+
+            body {
+                overflow-x: hidden;
+            }
+
+            @media (max-width: 767px) {
+                .card {
+                    border-radius: 14px;
+                }
+            }
+        </style>
+    </head>
+
+    <body class="text-slate-900">
+
+        <div class="min-h-screen flex">
+
+            <!-- ===================================================== -->
+            <!-- SIDEBAR -->
+            <!-- ===================================================== -->
+
+            <!-- ===================================================== -->
+            <!-- MOBILE SIDEBAR OVERLAY -->
+            <!-- ===================================================== -->
+
+            <div id="sidebarOverlay" class="fixed inset-0 bg-slate-950/40 z-40 hidden md:hidden"
+                onclick="closeMobileSidebar()"></div>
 
 
-        <aside id="recruiterSidebar" class="w-64 bg-white border-r border-slate-200 min-h-screen fixed left-0 top-0 z-50
-                   transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <aside id="recruiterSidebar" class="w-64 bg-white border-r border-slate-200 min-h-screen fixed left-0 top-0 z-50
+                    transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
 
-            <!-- Logo -->
+                <!-- Logo -->
 
-            <div class="h-20 flex items-center px-6 border-b border-slate-200">
+                <div class="h-20 flex items-center px-6 border-b border-slate-200">
 
-                <div class="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center">
-                    <span class="text-white text-xl font-bold">L</span>
-                </div>
-
-                <div class="ml-3">
-                    <div class="font-bold text-lg leading-none">
-                        levelupwards
+                    <div class="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center">
+                        <span class="text-white text-xl font-bold">L</span>
                     </div>
 
-                    <div class="text-[9px] tracking-[0.18em] text-slate-400 mt-1">
-                        TALENT INTELLIGENCE
+                    <div class="ml-3">
+                        <div class="font-bold text-lg leading-none">
+                            levelupwards
+                        </div>
+
+                        <div class="text-[9px] tracking-[0.18em] text-slate-400 mt-1">
+                            TALENT INTELLIGENCE
+                        </div>
                     </div>
+
                 </div>
 
-            </div>
 
+                <!-- Recruiter Label -->
 
-            <!-- Recruiter Label -->
+                <div class="px-6 pt-6 pb-3">
 
-            <div class="px-6 pt-6 pb-3">
+                    <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        Recruiter Workspace
+                    </div>
 
-                <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                    Recruiter Workspace
                 </div>
 
-            </div>
+
+                <!-- Navigation -->
+
+                <nav class="px-3 space-y-1">
+
+                    <a href="#overview" onclick="showSection('overview'); return false;" id="overviewNav"
+                        class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium">
+
+                        <span>▦</span>
+                        <span>Overview</span>
+
+                    </a>
 
 
-            <!-- Navigation -->
-
-            <nav class="px-3 space-y-1">
-
-                <a href="#overview" onclick="showSection('overview'); return false;" id="overviewNav"
-                    class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium">
-
-                    <span>▦</span>
-                    <span>Overview</span>
-
-                </a>
+                    <a href="#requirements" onclick="showSection('requirements'); return false;"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600"
+                        id="requirementsNav">
+                        <span>▤</span>
+                        <span>Requirements</span>
+                    </a>
 
 
-                <a href="#requirements" onclick="showSection('requirements'); return false;"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600"
-                    id="requirementsNav">
-                    <span>▤</span>
-                    <span>Requirements</span>
-                </a>
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
+
+                        <span>♙</span>
+                        <span>Candidates</span>
+
+                    </a>
 
 
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
 
-                    <span>♙</span>
-                    <span>Candidates</span>
+                        <span>✦</span>
+                        <span>AI Matching</span>
 
-                </a>
-
-
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
-
-                    <span>✦</span>
-                    <span>AI Matching</span>
-
-                </a>
+                    </a>
 
 
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
 
-                    <span>♡</span>
-                    <span>Shortlist</span>
+                        <span>♡</span>
+                        <span>Shortlist</span>
 
-                </a>
-
-
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
-
-                    <span>◷</span>
-                    <span>Interviews</span>
-
-                </a>
+                    </a>
 
 
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
 
-                    <span>▥</span>
-                    <span>Hiring Pipeline</span>
+                        <span>◷</span>
+                        <span>Interviews</span>
 
-                </a>
-
-
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
-
-                    <span>⌁</span>
-                    <span>Analytics</span>
-
-                </a>
+                    </a>
 
 
-                <a href="#"
-                    class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
 
-                    <span>✧</span>
-                    <span>Talent Intelligence</span>
+                        <span>▥</span>
+                        <span>Hiring Pipeline</span>
 
-                </a>
-
-            </nav>
+                    </a>
 
 
-            <!-- Bottom -->
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
 
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
+                        <span>⌁</span>
+                        <span>Analytics</span>
 
-                <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600">
-                    <span>⚙</span>
-                    <span>Profile & Settings</span>
-                </a>
-
-                <button onclick="logout()"
-                    class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 text-left">
-                    <span>↪</span>
-                    <span>Logout</span>
-                </button>
-
-            </div>
-
-        </aside>
+                    </a>
 
 
-        <!-- ===================================================== -->
-        <!-- MAIN CONTENT -->
-        <!-- ===================================================== -->
+                    <a href="#"
+                        class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600">
 
-        <main class="md:ml-64 flex-1 min-h-screen w-full">
+                        <span>✧</span>
+                        <span>Talent Intelligence</span>
+
+                    </a>
+
+                </nav>
 
 
-            <!-- TOP BAR -->
+                <!-- Bottom -->
 
-            <header
-                class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
+                <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
 
-                <div class="flex items-center gap-3 min-w-0">
+                    <a href="#" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600">
+                        <span>⚙</span>
+                        <span>Profile & Settings</span>
+                    </a>
 
-                    <button type="button" onclick="toggleMobileSidebar()" class="md:hidden w-10 h-10 shrink-0 rounded-xl border border-slate-200 bg-white
-                               flex items-center justify-center text-slate-700 text-xl" aria-label="Open navigation"
-                        aria-controls="recruiterSidebar" aria-expanded="false">
-                        ☰
+                    <button onclick="logout()"
+                        class="sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-600 text-left">
+                        <span>↪</span>
+                        <span>Logout</span>
                     </button>
 
-                    <div class="min-w-0">
+                </div>
 
-                        <div class="text-xs md:text-sm text-slate-400 truncate">
-                            Recruiter Workspace
-                        </div>
-
-                        <h1 id="pageTitle" class="text-xl font-bold">
-                            Overview
-                        </h1>
-
-                    </div>
+            </aside>
 
 
-                    <div class="flex items-center gap-5">
+            <!-- ===================================================== -->
+            <!-- MAIN CONTENT -->
+            <!-- ===================================================== -->
 
-                        <!-- Notification -->
+            <main class="md:ml-64 flex-1 min-h-screen w-full">
 
-                        <button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center">
-                            🔔
+
+                <!-- TOP BAR -->
+
+                <header
+                    class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
+
+                    <div class="flex items-center gap-3 min-w-0">
+
+                        <button type="button" onclick="toggleMobileSidebar()" class="md:hidden w-10 h-10 shrink-0 rounded-xl border border-slate-200 bg-white
+                                flex items-center justify-center text-slate-700 text-xl" aria-label="Open navigation"
+                            aria-controls="recruiterSidebar" aria-expanded="false">
+                            ☰
                         </button>
 
+                        <div class="min-w-0">
 
-                        <!-- Recruiter -->
-
-                        <div class="flex items-center gap-3">
-
-                            <div
-                                class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                                R
+                            <div class="text-xs md:text-sm text-slate-400 truncate">
+                                Recruiter Workspace
                             </div>
 
-                            <div class="hidden sm:block">
-
-                                <div id="recruiterName" class="text-sm font-semibold truncate max-w-[140px]">
-                                    Recruiter
-                                </div>
-
-                                <div class="text-xs text-slate-400">
-                                    Recruiter
-                                </div>
-
-                            </div>
+                            <h1 id="pageTitle" class="text-xl font-bold">
+                                Overview
+                            </h1>
 
                         </div>
 
-                    </div>
 
-            </header>
+                        <div class="flex items-center gap-5">
 
+                            <!-- Notification -->
 
-            <!-- PAGE -->
-
-            <section id="overviewSection" class="p-4 sm:p-6 md:p-8">
-
-
-                <!-- GREETING -->
-
-                <div class="mb-8">
-
-                    <div class="text-sm text-indigo-600 font-semibold mb-2">
-                        TALENT OPERATIONS
-                    </div>
-
-                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-                        Good morning, <span id="greetingName">Recruiter</span>
-                    </h2>
-
-                    <p class="text-slate-500 mt-2">
-                        Here's what's happening across your recruitment pipeline today.
-                    </p>
-
-                </div>
-
-
-                <!-- ================================================= -->
-                <!-- KPI CARDS -->
-                <!-- ================================================= -->
-
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-
-
-                    <div class="card p-6">
-
-                        <div class="flex items-center justify-between">
-
-                            <div>
-                                <div class="text-sm text-slate-500">
-                                    Active Requirements
-                                </div>
-
-                                <div id="overviewActiveRequirements" class="text-3xl font-bold mt-2">
-                                    —
-                                </div>
-                            </div>
-
-                            <div
-                                class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl">
-                                ▤
-                            </div>
-
-                        </div>
-
-                        <div id="requirementsTrend" class="text-xs text-slate-400 mt-4">
-                            From live database
-                        </div>
-
-                    </div>
-
-
-                    <div class="card p-6">
-
-                        <div class="flex items-center justify-between">
-
-                            <div>
-                                <div class="text-sm text-slate-500">
-                                    Candidates
-                                </div>
-
-                                <div id="candidateCount" class="text-3xl font-bold mt-2">
-                                    —
-                                </div>
-                            </div>
-
-                            <div
-                                class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl">
-                                ♙
-                            </div>
-
-                        </div>
-
-                        <div id="candidateTrend" class="text-xs text-slate-400 mt-4">
-                            From live database
-                        </div>
-
-                    </div>
-
-
-                    <div class="card p-6">
-
-                        <div class="flex items-center justify-between">
-
-                            <div>
-                                <div class="text-sm text-slate-500">
-                                    Shortlisted
-                                </div>
-
-                                <div id="shortlistedCount" class="text-3xl font-bold mt-2">
-                                    —
-                                </div>
-                            </div>
-
-                            <div
-                                class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 text-xl">
-                                ♡
-                            </div>
-
-                        </div>
-
-                        <div class="text-xs text-slate-400 mt-4">
-                            Across active requirements
-                        </div>
-
-                    </div>
-
-
-                    <div class="card p-6">
-
-                        <div class="flex items-center justify-between">
-
-                            <div>
-                                <div class="text-sm text-slate-500">
-                                    Interviews
-                                </div>
-
-                                <div id="interviewCount" class="text-3xl font-bold mt-2">
-                                    —
-                                </div>
-                            </div>
-
-                            <div
-                                class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 text-xl">
-                                ◷
-                            </div>
-
-                        </div>
-
-                        <div id="interviewToday" class="text-xs text-slate-400 mt-4">
-                            Loading...
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- ================================================= -->
-                <!-- MIDDLE SECTION -->
-                <!-- ================================================= -->
-
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-
-
-                    <!-- HIRING PIPELINE -->
-
-                    <div class="card p-6 xl:col-span-2">
-
-                        <div class="flex items-center justify-between mb-6">
-
-                            <div>
-
-                                <h3 class="font-bold text-lg">
-                                    Hiring Pipeline
-                                </h3>
-
-                                <p class="text-sm text-slate-400 mt-1">
-                                    Candidate movement across your hiring stages
-                                </p>
-
-                            </div>
-
-                            <button class="text-sm text-indigo-600 font-semibold">
-                                View Pipeline →
+                            <button class="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center">
+                                🔔
                             </button>
 
-                        </div>
 
+                            <!-- Recruiter -->
 
-                        <div class="space-y-5">
+                            <div class="flex items-center gap-3">
 
-
-                            <div>
-
-                                <div class="flex justify-between text-sm mb-2">
-
-                                    <span class="font-medium">
-                                        Applied
-                                    </span>
-
-                                    <span id="pipelineApplied" class="text-slate-400">—</span>
-
+                                <div
+                                    class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                                    R
                                 </div>
 
-                                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="hidden sm:block">
 
-                                    <div id="pipelineAppliedBar" class="h-full bg-indigo-500 rounded-full"
-                                        style="width:0%"></div>
+                                    <div id="recruiterName" class="text-sm font-semibold truncate max-w-[140px]">
+                                        Recruiter
+                                    </div>
 
-                                </div>
-
-                            </div>
-
-
-                            <div>
-
-                                <div class="flex justify-between text-sm mb-2">
-
-                                    <span class="font-medium">
-                                        Screening
-                                    </span>
-
-                                    <span id="pipelineScreening" class="text-slate-400">—</span>
-
-                                </div>
-
-                                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-
-                                    <div id="pipelineScreeningBar" class="h-full bg-indigo-500 rounded-full"
-                                        style="width:0%"></div>
-
-                                </div>
-
-                            </div>
-
-
-                            <div>
-
-                                <div class="flex justify-between text-sm mb-2">
-
-                                    <span class="font-medium">
-                                        Shortlisted
-                                    </span>
-
-                                    <span id="pipelineShortlisted" class="text-slate-400">—</span>
-
-                                </div>
-
-                                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-
-                                    <div id="pipelineShortlistedBar" class="h-full bg-indigo-500 rounded-full"
-                                        style="width:0%"></div>
-
-                                </div>
-
-                            </div>
-
-
-                            <div>
-
-                                <div class="flex justify-between text-sm mb-2">
-
-                                    <span class="font-medium">
-                                        Interview
-                                    </span>
-
-                                    <span id="pipelineInterview" class="text-slate-400">—</span>
-
-                                </div>
-
-                                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-
-                                    <div id="pipelineInterviewBar" class="h-full bg-indigo-500 rounded-full"
-                                        style="width:0%"></div>
-
-                                </div>
-
-                            </div>
-
-
-                            <div>
-
-                                <div class="flex justify-between text-sm mb-2">
-
-                                    <span class="font-medium">
-                                        Offer
-                                    </span>
-
-                                    <span id="pipelineOffer" class="text-slate-400">—</span>
-
-                                </div>
-
-                                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-
-                                    <div id="pipelineOfferBar" class="h-full bg-indigo-500 rounded-full"
-                                        style="width:0%"></div>
+                                    <div class="text-xs text-slate-400">
+                                        Recruiter
+                                    </div>
 
                                 </div>
 
@@ -571,756 +277,798 @@
 
                         </div>
 
-                    </div>
+                </header>
 
 
-                    <!-- AI ALERTS -->
+                <!-- PAGE -->
 
-                    <div class="card p-6">
-
-                        <div class="flex items-center justify-between mb-6">
-
-                            <div>
-
-                                <h3 class="font-bold text-lg">
-                                    AI Talent Alerts
-                                </h3>
-
-                                <p class="text-sm text-slate-400 mt-1">
-                                    Intelligence requiring attention
-                                </p>
-
-                            </div>
-
-                            <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                                AI Active
-                            </span>
-
-                        </div>
+                <section id="overviewSection" class="p-4 sm:p-6 md:p-8">
 
 
-                        <div id="dashboardAlerts" class="space-y-4">
+                    <!-- GREETING -->
 
-                            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-400">
-                                Loading live alerts...
-                            </div>
+                    <div class="mb-8">
 
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- ================================================= -->
-                <!-- ACTIVE REQUIREMENTS -->
-                <!-- ================================================= -->
-
-                <div class="card overflow-hidden">
-
-                    <div
-                        class="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-
-                        <div>
-                            <h3 class="font-bold text-lg">
-                                Active Requirements
-                            </h3>
-
-                            <p class="text-sm text-slate-400 mt-1">
-                                Your current hiring requirements
-                            </p>
-                        </div>
-
-                        <button onclick="showSection('requirements')"
-                            class="px-4 py-2 rounded-lg bg-slate-950 text-white text-sm font-semibold hover:bg-slate-800">
-                            View Requirements →
-                        </button>
-
-                    </div>
-
-                    <div class="overflow-x-auto">
-
-                        <table class="w-full min-w-[720px] text-sm">
-
-                            <thead class="bg-slate-50">
-
-                                <tr>
-                                    <th class="text-left px-6 py-4 font-semibold text-slate-500">
-                                        Requirement
-                                    </th>
-
-                                    <th class="text-left px-6 py-4 font-semibold text-slate-500">
-                                        Work Mode
-                                    </th>
-
-                                    <th class="text-left px-6 py-4 font-semibold text-slate-500">
-                                        Priority
-                                    </th>
-
-                                    <th class="text-left px-6 py-4 font-semibold text-slate-500">
-                                        Status
-                                    </th>
-
-                                    <th class="text-right px-6 py-4 font-semibold text-slate-500">
-                                        Action
-                                    </th>
-                                </tr>
-
-                            </thead>
-
-                            <tbody id="overviewRequirementsBody" class="divide-y divide-slate-100">
-
-                                <tr>
-                                    <td colspan="5" class="px-6 py-10 text-center text-slate-400">
-                                        Loading requirements...
-                                    </td>
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- ===================================================== -->
-            <!-- REQUIREMENTS SECTION -->
-            <!-- ===================================================== -->
-
-            <section id="requirementsSection" class="hidden p-4 sm:p-6 md:p-8">
-
-                <div class="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
-
-                    <div>
                         <div class="text-sm text-indigo-600 font-semibold mb-2">
-                            TALENT REQUIREMENTS
+                            TALENT OPERATIONS
                         </div>
 
                         <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
-                            Requirements
+                            Good morning, <span id="greetingName">Recruiter</span>
                         </h2>
 
                         <p class="text-slate-500 mt-2">
-                            Manage your hiring requirements and discover the right talent.
-                        </p>
-                    </div>
-
-                    <button onclick="showCreateRequirement()"
-                        class="px-5 py-3 rounded-xl bg-slate-950 text-white text-sm font-semibold hover:bg-slate-800">
-                        + Create Requirement
-                    </button>
-
-                </div>
-
-
-                <!-- Search and filters -->
-
-                <div class="card p-5 mb-6">
-
-                    <div class="flex flex-col lg:flex-row gap-4">
-
-                        <div class="flex-1">
-
-                            <input id="requirementSearch" type="text"
-                                placeholder="Search requirements, skills, work mode..." oninput="filterRequirements()"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
-
-                        </div>
-
-                        <div class="flex flex-wrap gap-2">
-
-                            <button onclick="setRequirementFilter('all')" id="filterAll"
-                                class="requirement-filter px-4 py-3 rounded-xl bg-slate-950 text-white text-sm font-semibold">
-                                All
-                            </button>
-
-                            <button onclick="setRequirementFilter('active')" id="filterActive"
-                                class="requirement-filter px-4 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">
-                                Active
-                            </button>
-
-                            <button onclick="setRequirementFilter('paused')" id="filterPaused"
-                                class="requirement-filter px-4 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">
-                                Paused
-                            </button>
-
-                            <button onclick="setRequirementFilter('closed')" id="filterClosed"
-                                class="requirement-filter px-4 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">
-                                Closed
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- Summary -->
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-
-                    <div class="card p-5">
-                        <div class="text-sm text-slate-500">
-                            Total Requirements
-                        </div>
-
-                        <div id="totalRequirements" class="text-3xl font-bold mt-2">
-                            —
-                        </div>
-                    </div>
-
-                    <div class="card p-5">
-                        <div class="text-sm text-slate-500">
-                            Active Requirements
-                        </div>
-
-                        <div id="activeRequirements" class="text-3xl font-bold mt-2 text-emerald-600">
-                            —
-                        </div>
-                    </div>
-
-                    <div class="card p-5">
-                        <div class="text-sm text-slate-500">
-                            High Priority
-                        </div>
-
-                        <div id="highPriorityRequirements" class="text-3xl font-bold mt-2 text-red-600">
-                            —
-                        </div>
-                    </div>
-
-                </div>
-
-
-                <!-- Requirements list -->
-
-                <div class="card overflow-hidden">
-
-                    <div class="p-6 border-b border-slate-200">
-
-                        <h3 class="font-bold text-lg">
-                            Hiring Requirements
-                        </h3>
-
-                        <p class="text-sm text-slate-400 mt-1">
-                            Requirements available to your recruiter workspace.
+                            Here's what's happening across your recruitment pipeline today.
                         </p>
 
                     </div>
 
-                    <div id="requirementsLoading" class="p-12 text-center text-slate-400">
-                        Loading requirements...
-                    </div>
 
-                    <div id="requirementsEmpty" class="hidden p-12 text-center">
+                    <!-- ================================================= -->
+                    <!-- KPI CARDS -->
+                    <!-- ================================================= -->
 
-                        <div class="text-4xl mb-4">
-                            ▤
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+
+
+                        <div class="card p-6">
+
+                            <div class="flex items-center justify-between">
+
+                                <div>
+                                    <div class="text-sm text-slate-500">
+                                        Active Requirements
+                                    </div>
+
+                                    <div id="overviewActiveRequirements" class="text-3xl font-bold mt-2">
+                                        —
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl">
+                                    ▤
+                                </div>
+
+                            </div>
+
+                            <div id="requirementsTrend" class="text-xs text-slate-400 mt-4">
+                                From live database
+                            </div>
+
                         </div>
 
-                        <h3 class="font-bold text-lg">
-                            No requirements found
-                        </h3>
 
-                        <p class="text-sm text-slate-400 mt-2">
-                            Try another search or create a new requirement.
-                        </p>
+                        <div class="card p-6">
+
+                            <div class="flex items-center justify-between">
+
+                                <div>
+                                    <div class="text-sm text-slate-500">
+                                        Candidates
+                                    </div>
+
+                                    <div id="candidateCount" class="text-3xl font-bold mt-2">
+                                        —
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl">
+                                    ♙
+                                </div>
+
+                            </div>
+
+                            <div id="candidateTrend" class="text-xs text-slate-400 mt-4">
+                                From live database
+                            </div>
+
+                        </div>
+
+
+                        <div class="card p-6">
+
+                            <div class="flex items-center justify-between">
+
+                                <div>
+                                    <div class="text-sm text-slate-500">
+                                        Shortlisted
+                                    </div>
+
+                                    <div id="shortlistedCount" class="text-3xl font-bold mt-2">
+                                        —
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 text-xl">
+                                    ♡
+                                </div>
+
+                            </div>
+
+                            <div class="text-xs text-slate-400 mt-4">
+                                Across active requirements
+                            </div>
+
+                        </div>
+
+
+                        <div class="card p-6">
+
+                            <div class="flex items-center justify-between">
+
+                                <div>
+                                    <div class="text-sm text-slate-500">
+                                        Interviews
+                                    </div>
+
+                                    <div id="interviewCount" class="text-3xl font-bold mt-2">
+                                        —
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 text-xl">
+                                    ◷
+                                </div>
+
+                            </div>
+
+                            <div id="interviewToday" class="text-xs text-slate-400 mt-4">
+                                Loading...
+                            </div>
+
+                        </div>
 
                     </div>
 
-                    <div id="requirementsList" class="divide-y divide-slate-100">
+
+                    <!-- ================================================= -->
+                    <!-- MIDDLE SECTION -->
+                    <!-- ================================================= -->
+
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+
+
+                        <!-- HIRING PIPELINE -->
+
+                        <div class="card p-6 xl:col-span-2">
+
+                            <div class="flex items-center justify-between mb-6">
+
+                                <div>
+
+                                    <h3 class="font-bold text-lg">
+                                        Hiring Pipeline
+                                    </h3>
+
+                                    <p class="text-sm text-slate-400 mt-1">
+                                        Candidate movement across your hiring stages
+                                    </p>
+
+                                </div>
+
+                                <button class="text-sm text-indigo-600 font-semibold">
+                                    View Pipeline →
+                                </button>
+
+                            </div>
+
+
+                            <div class="space-y-5">
+
+
+                                <div>
+
+                                    <div class="flex justify-between text-sm mb-2">
+
+                                        <span class="font-medium">
+                                            Applied
+                                        </span>
+
+                                        <span id="pipelineApplied" class="text-slate-400">—</span>
+
+                                    </div>
+
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                                        <div id="pipelineAppliedBar" class="h-full bg-indigo-500 rounded-full"
+                                            style="width:0%"></div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div>
+
+                                    <div class="flex justify-between text-sm mb-2">
+
+                                        <span class="font-medium">
+                                            Screening
+                                        </span>
+
+                                        <span id="pipelineScreening" class="text-slate-400">—</span>
+
+                                    </div>
+
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                                        <div id="pipelineScreeningBar" class="h-full bg-indigo-500 rounded-full"
+                                            style="width:0%"></div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div>
+
+                                    <div class="flex justify-between text-sm mb-2">
+
+                                        <span class="font-medium">
+                                            Shortlisted
+                                        </span>
+
+                                        <span id="pipelineShortlisted" class="text-slate-400">—</span>
+
+                                    </div>
+
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                                        <div id="pipelineShortlistedBar" class="h-full bg-indigo-500 rounded-full"
+                                            style="width:0%"></div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div>
+
+                                    <div class="flex justify-between text-sm mb-2">
+
+                                        <span class="font-medium">
+                                            Interview
+                                        </span>
+
+                                        <span id="pipelineInterview" class="text-slate-400">—</span>
+
+                                    </div>
+
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                                        <div id="pipelineInterviewBar" class="h-full bg-indigo-500 rounded-full"
+                                            style="width:0%"></div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div>
+
+                                    <div class="flex justify-between text-sm mb-2">
+
+                                        <span class="font-medium">
+                                            Offer
+                                        </span>
+
+                                        <span id="pipelineOffer" class="text-slate-400">—</span>
+
+                                    </div>
+
+                                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+
+                                        <div id="pipelineOfferBar" class="h-full bg-indigo-500 rounded-full"
+                                            style="width:0%"></div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- AI ALERTS -->
+
+                        <div class="card p-6">
+
+                            <div class="flex items-center justify-between mb-6">
+
+                                <div>
+
+                                    <h3 class="font-bold text-lg">
+                                        AI Talent Alerts
+                                    </h3>
+
+                                    <p class="text-sm text-slate-400 mt-1">
+                                        Intelligence requiring attention
+                                    </p>
+
+                                </div>
+
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
+                                    AI Active
+                                </span>
+
+                            </div>
+
+
+                            <div id="dashboardAlerts" class="space-y-4">
+
+                                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-400">
+                                    Loading live alerts...
+                                </div>
+
+                            </div>
+
+                        </div>
+
                     </div>
 
-                </div>
 
-            </section>
+                    <!-- ================================================= -->
+                    <!-- ACTIVE REQUIREMENTS -->
+                    <!-- ================================================= -->
+
+                    <div class="card overflow-hidden">
+
+                        <div
+                            class="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+                            <div>
+                                <h3 class="font-bold text-lg">
+                                    Active Requirements
+                                </h3>
+
+                                <p class="text-sm text-slate-400 mt-1">
+                                    Your current hiring requirements
+                                </p>
+                            </div>
+
+                            <button onclick="showSection('requirements')"
+                                class="px-4 py-2 rounded-lg bg-slate-950 text-white text-sm font-semibold hover:bg-slate-800">
+                                View Requirements →
+                            </button>
+
+                        </div>
+
+                        <div class="overflow-x-auto">
+
+                            <table class="w-full min-w-[720px] text-sm">
+
+                                <thead class="bg-slate-50">
+
+                                    <tr>
+                                        <th class="text-left px-6 py-4 font-semibold text-slate-500">
+                                            Requirement
+                                        </th>
+
+                                        <th class="text-left px-6 py-4 font-semibold text-slate-500">
+                                            Work Mode
+                                        </th>
+
+                                        <th class="text-left px-6 py-4 font-semibold text-slate-500">
+                                            Priority
+                                        </th>
+
+                                        <th class="text-left px-6 py-4 font-semibold text-slate-500">
+                                            Status
+                                        </th>
+
+                                        <th class="text-right px-6 py-4 font-semibold text-slate-500">
+                                            Action
+                                        </th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="overviewRequirementsBody" class="divide-y divide-slate-100">
+
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-10 text-center text-slate-400">
+                                            Loading requirements...
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </section>
 
 
-            <!-- ===================================================== -->
-            <!-- CREATE REQUIREMENT MODAL -->
-            <!-- ===================================================== -->
+                <!-- ===================================================== -->
+                <!-- REQUIREMENTS SECTION -->
+                <!-- ===================================================== -->
 
-            <div id="createRequirementModal"
-                class="hidden fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+                <section id="requirementsSection" class="hidden p-4 sm:p-6 md:p-8">
 
-                <div class="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-
-                    <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+                    <div class="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
 
                         <div>
-                            <h3 class="text-xl font-bold">
-                                Create Requirement
-                            </h3>
+                            <div class="text-sm text-indigo-600 font-semibold mb-2">
+                                TALENT REQUIREMENTS
+                            </div>
 
-                            <p class="text-sm text-slate-400 mt-1">
-                                Define the hiring requirement for your next role.
+                            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
+                                Requirements
+                            </h2>
+
+                            <p class="text-slate-500 mt-2">
+                                Manage your hiring requirements and discover the right talent.
                             </p>
                         </div>
 
-                        <button onclick="closeCreateRequirement()"
-                            class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
-                            ✕
+                        <button onclick="showCreateRequirement()"
+                            class="px-5 py-3 rounded-xl bg-slate-950 text-white text-sm font-semibold hover:bg-slate-800">
+                            + Create Requirement
                         </button>
 
                     </div>
 
-                    <form id="createRequirementForm" onsubmit="return handleCreateRequirement(event)"
-                        class="p-6 space-y-5">
 
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">
-                                Requirement / Business Outcome
-                            </label>
+                    <!-- Search and filters -->
 
-                            <input id="createBusinessOutcome" required
-                                placeholder="Example: Build and scale our AI platform"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
+                    <div class="card p-5 mb-6">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex flex-col lg:flex-row gap-4">
 
-                            <div>
-                                <label class="block text-sm font-semibold mb-2">
-                                    Work Mode
-                                </label>
+                            <div class="flex-1">
 
-                                <select id="createWorkMode"
+                                <input id="requirementSearch" type="text"
+                                    placeholder="Search requirements, skills, work mode..." oninput="filterRequirements()"
                                     class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
 
-                                    <option value="Remote">Remote</option>
-                                    <option value="Hybrid">Hybrid</option>
-                                    <option value="On-site">On-site</option>
-
-                                </select>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-semibold mb-2">
-                                    Priority
-                                </label>
+                            <div class="flex flex-wrap gap-2">
 
-                                <select id="createUrgency"
-                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                                <button onclick="setRequirementFilter('all')" id="filterAll"
+                                    class="requirement-filter px-4 py-3 rounded-xl bg-slate-950 text-white text-sm font-semibold">
+                                    All
+                                </button>
 
-                                    <option value="High">High</option>
-                                    <option value="Medium" selected>Medium</option>
-                                    <option value="Low">Low</option>
+                                <button onclick="setRequirementFilter('active')" id="filterActive"
+                                    class="requirement-filter px-4 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">
+                                    Active
+                                </button>
 
-                                </select>
+                                <button onclick="setRequirementFilter('paused')" id="filterPaused"
+                                    class="requirement-filter px-4 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">
+                                    Paused
+                                </button>
+
+                                <button onclick="setRequirementFilter('closed')" id="filterClosed"
+                                    class="requirement-filter px-4 py-3 rounded-xl bg-slate-100 text-slate-600 text-sm font-semibold">
+                                    Closed
+                                </button>
+
                             </div>
 
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </div>
 
-                            <div>
-                                <label class="block text-sm font-semibold mb-2">
-                                    Target Compensation (₹)
-                                </label>
 
-                                <input id="createCompensation" type="number" min="0" placeholder="1800000"
-                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Summary -->
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+
+                        <div class="card p-5">
+                            <div class="text-sm text-slate-500">
+                                Total Requirements
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-semibold mb-2">
-                                    Vacancy Cost / Day (₹)
-                                </label>
-
-                                <input id="createVacancyCost" type="number" min="0" placeholder="1500"
-                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div id="totalRequirements" class="text-3xl font-bold mt-2">
+                                —
                             </div>
-
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">
-                                Essential Capabilities
-                            </label>
+                        <div class="card p-5">
+                            <div class="text-sm text-slate-500">
+                                Active Requirements
+                            </div>
 
-                            <input id="createEssentialCapabilities" placeholder="Python, FastAPI, SQL, AWS"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div id="activeRequirements" class="text-3xl font-bold mt-2 text-emerald-600">
+                                —
+                            </div>
+                        </div>
 
-                            <p class="text-xs text-slate-400 mt-2">
-                                Separate capabilities with commas.
+                        <div class="card p-5">
+                            <div class="text-sm text-slate-500">
+                                High Priority
+                            </div>
+
+                            <div id="highPriorityRequirements" class="text-3xl font-bold mt-2 text-red-600">
+                                —
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <!-- Requirements list -->
+
+                    <div class="card overflow-hidden">
+
+                        <div class="p-6 border-b border-slate-200">
+
+                            <h3 class="font-bold text-lg">
+                                Hiring Requirements
+                            </h3>
+
+                            <p class="text-sm text-slate-400 mt-1">
+                                Requirements available to your recruiter workspace.
                             </p>
+
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">
-                                Preferred Capabilities
-                            </label>
+                        <div id="requirementsLoading" class="p-12 text-center text-slate-400">
+                            Loading requirements...
+                        </div>
 
-                            <input id="createPreferredCapabilities" placeholder="Docker, Kubernetes, GenAI"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div id="requirementsEmpty" class="hidden p-12 text-center">
 
-                            <p class="text-xs text-slate-400 mt-2">
-                                Separate capabilities with commas.
+                            <div class="text-4xl mb-4">
+                                ▤
+                            </div>
+
+                            <h3 class="font-bold text-lg">
+                                No requirements found
+                            </h3>
+
+                            <p class="text-sm text-slate-400 mt-2">
+                                Try another search or create a new requirement.
                             </p>
+
                         </div>
 
-                        <div id="createRequirementMessage" class="hidden rounded-xl p-4 text-sm">
+                        <div id="requirementsList" class="divide-y divide-slate-100">
                         </div>
 
-                        <div class="flex justify-end gap-3 pt-2">
+                    </div>
 
-                            <button type="button" onclick="closeCreateRequirement()"
-                                class="px-5 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700">
-                                Cancel
+                </section>
+
+
+                <!-- ===================================================== -->
+                <!-- CREATE REQUIREMENT MODAL -->
+                <!-- ===================================================== -->
+
+                <div id="createRequirementModal"
+                    class="hidden fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+
+                    <div class="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+
+                        <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+
+                            <div>
+                                <h3 class="text-xl font-bold">
+                                    Create Requirement
+                                </h3>
+
+                                <p class="text-sm text-slate-400 mt-1">
+                                    Define the hiring requirement for your next role.
+                                </p>
+                            </div>
+
+                            <button onclick="closeCreateRequirement()"
+                                class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                ✕
                             </button>
 
-                            <button type="submit"
-                                class="px-5 py-3 rounded-xl bg-slate-950 text-white text-sm font-semibold hover:bg-slate-800">
-                                Save Requirement
-                            </button>
-
                         </div>
 
-                    </form>
+                        <form id="createRequirementForm" onsubmit="return handleCreateRequirement(event)"
+                            class="p-6 space-y-5">
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-2">
+                                    Requirement / Business Outcome
+                                </label>
+
+                                <input id="createBusinessOutcome" required
+                                    placeholder="Example: Build and scale our AI platform"
+                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">
+                                        Work Mode
+                                    </label>
+
+                                    <select id="createWorkMode"
+                                        class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+
+                                        <option value="Remote">Remote</option>
+                                        <option value="Hybrid">Hybrid</option>
+                                        <option value="On-site">On-site</option>
+
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">
+                                        Priority
+                                    </label>
+
+                                    <select id="createUrgency"
+                                        class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+
+                                        <option value="High">High</option>
+                                        <option value="Medium" selected>Medium</option>
+                                        <option value="Low">Low</option>
+
+                                    </select>
+                                </div>
+
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">
+                                        Target Compensation (₹)
+                                    </label>
+
+                                    <input id="createCompensation" type="number" min="0" placeholder="1800000"
+                                        class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">
+                                        Vacancy Cost / Day (₹)
+                                    </label>
+
+                                    <input id="createVacancyCost" type="number" min="0" placeholder="1500"
+                                        class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-2">
+                                    Essential Capabilities
+                                </label>
+
+                                <input id="createEssentialCapabilities" placeholder="Python, FastAPI, SQL, AWS"
+                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+
+                                <p class="text-xs text-slate-400 mt-2">
+                                    Separate capabilities with commas.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-2">
+                                    Preferred Capabilities
+                                </label>
+
+                                <input id="createPreferredCapabilities" placeholder="Docker, Kubernetes, GenAI"
+                                    class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+
+                                <p class="text-xs text-slate-400 mt-2">
+                                    Separate capabilities with commas.
+                                </p>
+                            </div>
+
+                            <div id="createRequirementMessage" class="hidden rounded-xl p-4 text-sm">
+                            </div>
+
+                            <div class="flex justify-end gap-3 pt-2">
+
+                                <button type="button" onclick="closeCreateRequirement()"
+                                    class="px-5 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700">
+                                    Cancel
+                                </button>
+
+                                <button type="submit"
+                                    class="px-5 py-3 rounded-xl bg-slate-950 text-white text-sm font-semibold hover:bg-slate-800">
+                                    Save Requirement
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
 
                 </div>
 
-            </div>
+
+            </main>
+
+        </div>
+
+        <script>
+
+            // ============================================================
+            // GLOBAL STATE
+            // ============================================================
+
+            let recruiterRequirements = [];
+            let currentRequirementFilter = "all";
 
 
-        </main>
+            // ============================================================
+            // RECRUITER INFORMATION
+            // ============================================================
 
-    </div>
+            function loadRecruiter() {
 
-    <script>
+                const userData = localStorage.getItem("user");
 
-        // ============================================================
-        // GLOBAL STATE
-        // ============================================================
-
-        let recruiterRequirements = [];
-        let currentRequirementFilter = "all";
-
-
-        // ============================================================
-        // RECRUITER INFORMATION
-        // ============================================================
-
-        function loadRecruiter() {
-
-            const userData = localStorage.getItem("user");
-
-            if (!userData) {
-                console.warn("No user data found in localStorage");
-                return;
-            }
-
-            try {
-
-                const user = JSON.parse(userData);
-
-                const name =
-                    user.name ||
-                    user.full_name ||
-                    user.username ||
-                    user.email ||
-                    "Recruiter";
-
-                const recruiterName =
-                    document.getElementById("recruiterName");
-
-                const greetingName =
-                    document.getElementById("greetingName");
-
-                if (recruiterName) {
-                    recruiterName.textContent = name;
+                if (!userData) {
+                    console.warn("No user data found in localStorage");
+                    return;
                 }
 
-                if (greetingName) {
-                    greetingName.textContent = name;
-                }
+                try {
 
-            } catch (error) {
+                    const user = JSON.parse(userData);
 
-                console.error(
-                    "Unable to parse recruiter information:",
-                    error
-                );
+                    const name =
+                        user.name ||
+                        user.full_name ||
+                        user.username ||
+                        user.email ||
+                        "Recruiter";
 
-            }
-        }
+                    const recruiterName =
+                        document.getElementById("recruiterName");
 
+                    const greetingName =
+                        document.getElementById("greetingName");
 
-        // ============================================================
-        // CANDIDATE COUNT
-        // ============================================================
-
-        async function loadCandidateCount() {
-
-            const candidateElement =
-                document.getElementById("candidateCount");
-
-            if (!candidateElement) {
-                return;
-            }
-
-            try {
-
-                candidateElement.textContent = "Loading...";
-
-                const response = await fetch("/api/candidates", {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Accept": "application/json"
+                    if (recruiterName) {
+                        recruiterName.textContent = name;
                     }
-                });
 
-                console.log(
-                    "Candidates API status:",
-                    response.status
-                );
+                    if (greetingName) {
+                        greetingName.textContent = name;
+                    }
 
-                if (!response.ok) {
-
-                    const errorText =
-                        await response.text();
+                } catch (error) {
 
                     console.error(
-                        "Candidates API error:",
-                        errorText
+                        "Unable to parse recruiter information:",
+                        error
                     );
 
-                    throw new Error(
-                        `Candidates API failed with status ${response.status}`
-                    );
                 }
-
-                const candidates =
-                    await response.json();
-
-                if (!Array.isArray(candidates)) {
-                    throw new Error(
-                        "Invalid candidates response"
-                    );
-                }
-
-                candidateElement.textContent =
-                    candidates.length;
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to load candidate count:",
-                    error
-                );
-
-                candidateElement.textContent = "—";
-            }
-        }
-
-
-        // ============================================================
-        // MOBILE SIDEBAR
-        // ============================================================
-
-        function toggleMobileSidebar() {
-            const sidebar = document.getElementById("recruiterSidebar");
-            const overlay = document.getElementById("sidebarOverlay");
-            const menuButton = document.querySelector('[aria-controls="recruiterSidebar"]');
-
-            if (!sidebar) return;
-
-            const isClosed = sidebar.classList.contains("-translate-x-full");
-
-            if (isClosed) {
-                sidebar.classList.remove("-translate-x-full");
-                sidebar.classList.add("translate-x-0");
-
-                if (overlay) overlay.classList.remove("hidden");
-                if (menuButton) menuButton.setAttribute("aria-expanded", "true");
-                document.body.classList.add("overflow-hidden", "md:overflow-auto");
-            } else {
-                closeMobileSidebar();
-            }
-        }
-
-
-        function closeMobileSidebar() {
-            const sidebar = document.getElementById("recruiterSidebar");
-            const overlay = document.getElementById("sidebarOverlay");
-            const menuButton = document.querySelector('[aria-controls="recruiterSidebar"]');
-
-            if (sidebar) {
-                sidebar.classList.add("-translate-x-full");
-                sidebar.classList.remove("translate-x-0");
-            }
-
-            if (overlay) overlay.classList.add("hidden");
-            if (menuButton) menuButton.setAttribute("aria-expanded", "false");
-            document.body.classList.remove("overflow-hidden");
-        }
-
-
-        window.addEventListener("resize", () => {
-            if (window.innerWidth >= 768) {
-                const sidebar = document.getElementById("recruiterSidebar");
-                const overlay = document.getElementById("sidebarOverlay");
-                const menuButton = document.querySelector('[aria-controls="recruiterSidebar"]');
-
-                if (sidebar) {
-                    sidebar.classList.remove("-translate-x-full", "translate-x-0");
-                }
-
-                if (overlay) overlay.classList.add("hidden");
-                if (menuButton) menuButton.setAttribute("aria-expanded", "false");
-                document.body.classList.remove("overflow-hidden");
-            }
-        });
-
-
-        // ============================================================
-        // SECTION NAVIGATION
-        // ============================================================
-
-        function showSection(section) {
-
-            if (window.innerWidth < 768) {
-                closeMobileSidebar();
-            }
-
-            const overview =
-                document.getElementById("overviewSection");
-
-            const requirements =
-                document.getElementById("requirementsSection");
-
-            const overviewNav =
-                document.getElementById("overviewNav");
-
-            const requirementsNav =
-                document.getElementById("requirementsNav");
-
-            const pageTitle =
-                document.getElementById("pageTitle");
-
-
-            if (overview) {
-                overview.classList.add("hidden");
-            }
-
-            if (requirements) {
-                requirements.classList.add("hidden");
             }
 
 
-            [overviewNav, requirementsNav]
-                .filter(Boolean)
-                .forEach(nav => {
+            // ============================================================
+            // CANDIDATE COUNT
+            // ============================================================
 
-                    nav.classList.remove(
-                        "active",
-                        "bg-slate-950",
-                        "text-white"
-                    );
+            async function loadCandidateCount() {
 
-                    nav.classList.add(
-                        "text-slate-600"
-                    );
+                const candidateElement =
+                    document.getElementById("candidateCount");
 
-                });
-
-
-            if (section === "requirements") {
-
-                if (pageTitle) {
-                    pageTitle.textContent = "Requirements";
+                if (!candidateElement) {
+                    return;
                 }
 
-                if (requirements) {
-                    requirements.classList.remove("hidden");
-                }
+                try {
 
-                if (requirementsNav) {
-                    requirementsNav.classList.add(
-                        "active",
-                        "bg-slate-950",
-                        "text-white"
-                    );
+                    candidateElement.textContent = "Loading...";
 
-                    requirementsNav.classList.remove(
-                        "text-slate-600"
-                    );
-                }
-
-                loadRequirements();
-
-            } else {
-
-                if (pageTitle) {
-                    pageTitle.textContent = "Overview";
-                }
-
-                if (overview) {
-                    overview.classList.remove("hidden");
-                }
-
-                if (overviewNav) {
-                    overviewNav.classList.add(
-                        "active",
-                        "bg-slate-950",
-                        "text-white"
-                    );
-
-                    overviewNav.classList.remove(
-                        "text-slate-600"
-                    );
-                }
-
-                loadOverviewRequirements();
-
-            }
-
-
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth"
-            });
-        }
-
-
-        // ============================================================
-        // REQUIREMENTS API
-        // ============================================================
-
-        async function loadRequirements() {
-
-            const loading =
-                document.getElementById("requirementsLoading");
-
-            const list =
-                document.getElementById("requirementsList");
-
-            const empty =
-                document.getElementById("requirementsEmpty");
-
-
-            if (!loading || !list || !empty) {
-                return;
-            }
-
-
-            try {
-
-                loading.classList.remove("hidden");
-
-                empty.classList.add("hidden");
-
-                list.innerHTML = "";
-
-
-                const response =
-                    await fetch("/api/requirements", {
+                    const response = await fetch("/api/candidates", {
                         method: "GET",
                         credentials: "include",
                         headers: {
@@ -1328,1332 +1076,1584 @@
                         }
                     });
 
-
-                console.log(
-                    "Requirements API status:",
-                    response.status
-                );
-
-
-                if (!response.ok) {
-
-                    const errorText =
-                        await response.text();
-
-                    console.error(
-                        "Requirements API error:",
-                        errorText
+                    console.log(
+                        "Candidates API status:",
+                        response.status
                     );
 
-                    throw new Error(
-                        `Requirements API failed with status ${response.status}`
-                    );
-                }
+                    if (!response.ok) {
 
+                        const errorText =
+                            await response.text();
 
-                const data =
-                    await response.json();
+                        console.error(
+                            "Candidates API error:",
+                            errorText
+                        );
 
-
-                if (!Array.isArray(data)) {
-                    throw new Error(
-                        "Invalid requirements response"
-                    );
-                }
-
-
-                recruiterRequirements = data;
-
-                updateRequirementSummary();
-
-                renderRequirements();
-
-                renderOverviewRequirements();
-
-                loadDashboardSummary();
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to load requirements:",
-                    error
-                );
-
-                list.innerHTML = `
-                    <div class="p-10 text-center">
-                        <div class="text-red-500 font-semibold">
-                            Unable to load requirements
-                        </div>
-
-                        <p class="text-sm text-slate-400 mt-2">
-                            Please refresh the page and try again.
-                        </p>
-                    </div>
-                `;
-
-            } finally {
-
-                loading.classList.add("hidden");
-
-            }
-        }
-
-
-        // ============================================================
-        // SUMMARY
-        // ============================================================
-
-        function updateRequirementSummary() {
-
-            const total =
-                recruiterRequirements.length;
-
-
-            const active =
-                recruiterRequirements.filter(
-                    requirement =>
-                        ["active", "open"].includes(
-                            String(requirement.status || "").toLowerCase()
-                        )
-                ).length;
-
-
-            const highPriority =
-                recruiterRequirements.filter(
-                    requirement =>
-                        String(
-                            requirement.urgency || ""
-                        ).toLowerCase() === "high"
-                ).length;
-
-
-            const totalElement =
-                document.getElementById(
-                    "totalRequirements"
-                );
-
-            const activeElement =
-                document.getElementById(
-                    "activeRequirements"
-                );
-
-            const highElement =
-                document.getElementById(
-                    "highPriorityRequirements"
-                );
-
-
-            if (totalElement) {
-                totalElement.textContent = total;
-            }
-
-            if (activeElement) {
-                activeElement.textContent = active;
-            }
-
-            if (highElement) {
-                highElement.textContent = highPriority;
-            }
-
-
-            const overviewActive =
-                document.getElementById(
-                    "overviewActiveRequirements"
-                );
-
-            if (overviewActive) {
-                overviewActive.textContent = active;
-            }
-        }
-
-
-        // ============================================================
-        // REQUIREMENT FILTER
-        // ============================================================
-
-        function filterRequirements() {
-            renderRequirements();
-        }
-
-
-        function setRequirementFilter(filter) {
-
-            currentRequirementFilter = filter;
-
-
-            document
-                .querySelectorAll(".requirement-filter")
-                .forEach(button => {
-
-                    button.classList.remove(
-                        "bg-slate-950",
-                        "text-white"
-                    );
-
-                    button.classList.add(
-                        "bg-slate-100",
-                        "text-slate-600"
-                    );
-
-                });
-
-
-            const selected =
-                document.getElementById(
-                    "filter" +
-                    filter.charAt(0).toUpperCase() +
-                    filter.slice(1)
-                );
-
-
-            if (selected) {
-
-                selected.classList.remove(
-                    "bg-slate-100",
-                    "text-slate-600"
-                );
-
-                selected.classList.add(
-                    "bg-slate-950",
-                    "text-white"
-                );
-
-            }
-
-
-            renderRequirements();
-        }
-
-
-        // ============================================================
-        // REQUIREMENT RENDERING
-        // ============================================================
-
-        function renderRequirements() {
-
-            const list =
-                document.getElementById(
-                    "requirementsList"
-                );
-
-            const empty =
-                document.getElementById(
-                    "requirementsEmpty"
-                );
-
-
-            if (!list || !empty) {
-                return;
-            }
-
-
-            const searchElement =
-                document.getElementById(
-                    "requirementSearch"
-                );
-
-
-            const search =
-                searchElement
-                    ? searchElement.value
-                        .toLowerCase()
-                        .trim()
-                    : "";
-
-
-            const filtered =
-                recruiterRequirements.filter(
-                    requirement => {
-
-                        const status =
-                            String(requirement.status || "").toLowerCase();
-
-
-                        const searchText =
-                            [
-                                requirement.business_outcome,
-                                requirement.work_mode,
-                                requirement.urgency,
-                                ...(Array.isArray(
-                                    requirement.essential_capabilities
-                                )
-                                    ? requirement.essential_capabilities
-                                    : []),
-                                ...(Array.isArray(
-                                    requirement.preferred_capabilities
-                                )
-                                    ? requirement.preferred_capabilities
-                                    : [])
-                            ]
-                                .join(" ")
-                                .toLowerCase();
-
-
-                        const matchesSearch =
-                            !search ||
-                            searchText.includes(search);
-
-
-                        const matchesFilter =
-                            currentRequirementFilter === "all" ||
-                            (currentRequirementFilter === "active" && ["active", "open"].includes(status)) ||
-                            status === currentRequirementFilter;
-
-
-                        return (
-                            matchesSearch &&
-                            matchesFilter
+                        throw new Error(
+                            `Candidates API failed with status ${response.status}`
                         );
                     }
-                );
 
+                    const candidates =
+                        await response.json();
 
-            list.innerHTML = "";
-
-
-            if (filtered.length === 0) {
-
-                empty.classList.remove("hidden");
-
-                return;
-            }
-
-
-            empty.classList.add("hidden");
-
-
-            filtered.forEach(requirement => {
-
-                const urgency =
-                    String(
-                        requirement.urgency || "Medium"
-                    ).toLowerCase();
-
-
-                const status =
-                    String(
-                        requirement.status || "Active"
-                    ).toLowerCase();
-
-
-                const urgencyClass =
-                    urgency === "high"
-                        ? "bg-red-50 text-red-600"
-                        : urgency === "medium"
-                            ? "bg-amber-50 text-amber-600"
-                            : "bg-slate-100 text-slate-600";
-
-
-                const statusClass =
-                    ["active", "open"].includes(status)
-                        ? "bg-emerald-50 text-emerald-600"
-                        : status === "paused"
-                            ? "bg-amber-50 text-amber-600"
-                            : "bg-slate-100 text-slate-500";
-
-
-                const skills =
-                    Array.isArray(
-                        requirement.essential_capabilities
-                    )
-                        ? requirement
-                            .essential_capabilities
-                            .slice(0, 6)
-                        : [];
-
-
-                const skillHTML =
-                    skills
-                        .map(
-                            skill => `
-                                <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-medium">
-                                    ${escapeHTML(skill)}
-                                </span>
-                            `
-                        )
-                        .join("");
-
-
-                const compensation =
-                    requirement.target_compensation
-                        ? `₹${Number(
-                            requirement.target_compensation
-                        ).toLocaleString("en-IN")}`
-                        : "Not specified";
-
-
-                const vacancyCost =
-                    Number(
-                        requirement.vacancy_cost_daily || 0
-                    ).toLocaleString("en-IN");
-
-
-                const row =
-                    document.createElement("div");
-
-
-                row.className =
-                    "p-6 hover:bg-slate-50 transition";
-
-
-                row.innerHTML = `
-
-                    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-
-                        <div class="flex-1">
-
-                            <div class="flex items-center gap-3 flex-wrap">
-
-                                <h4 class="font-bold text-lg">
-                                    ${escapeHTML(
-                    requirement.business_outcome ||
-                    "Untitled Requirement"
-                )}
-                                </h4>
-
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${urgencyClass}">
-                                    ${escapeHTML(
-                    requirement.urgency ||
-                    "Medium"
-                )}
-                                </span>
-
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${statusClass}">
-                                    ${escapeHTML(
-                    requirement.status ||
-                    "Active"
-                )}
-                                </span>
-
-                            </div>
-
-
-                            <div class="flex flex-wrap gap-4 mt-3 text-sm text-slate-500">
-
-                                <span>
-                                    Work Mode:
-                                    <strong class="text-slate-700">
-                                        ${escapeHTML(
-                    requirement.work_mode ||
-                    "Not specified"
-                )}
-                                    </strong>
-                                </span>
-
-                                <span>
-                                    Budget:
-                                    <strong class="text-slate-700">
-                                        ${compensation}
-                                    </strong>
-                                </span>
-
-                                <span>
-                                    Vacancy Cost:
-                                    <strong class="text-slate-700">
-                                        ₹${vacancyCost}/day
-                                    </strong>
-                                </span>
-
-                            </div>
-
-
-                            ${skillHTML
-                        ? `
-                                        <div class="flex flex-wrap gap-2 mt-4">
-                                            ${skillHTML}
-                                        </div>
-                                    `
-                        : ""
+                    if (!Array.isArray(candidates)) {
+                        throw new Error(
+                            "Invalid candidates response"
+                        );
                     }
 
-                        </div>
+                    candidateElement.textContent =
+                        candidates.length;
+
+                } catch (error) {
+
+                    console.error(
+                        "Unable to load candidate count:",
+                        error
+                    );
+
+                    candidateElement.textContent = "—";
+                }
+            }
 
 
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+            // ============================================================
+            // MOBILE SIDEBAR
+            // ============================================================
 
-                            <button
-                                onclick="viewRequirement('${escapeHTML(requirement.id)}')"
-                                class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-white text-center w-full sm:w-auto">
-                                View
-                            </button>
+            function toggleMobileSidebar() {
+                const sidebar = document.getElementById("recruiterSidebar");
+                const overlay = document.getElementById("sidebarOverlay");
+                const menuButton = document.querySelector('[aria-controls="recruiterSidebar"]');
 
-                            <button
-                                onclick="matchRequirement('${escapeHTML(requirement.id)}')"
-                                class="px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 text-center w-full sm:w-auto">
-                                AI Match
-                            </button>
+                if (!sidebar) return;
 
-                        </div>
+                const isClosed = sidebar.classList.contains("-translate-x-full");
 
-                    </div>
+                if (isClosed) {
+                    sidebar.classList.remove("-translate-x-full");
+                    sidebar.classList.add("translate-x-0");
 
-                `;
+                    if (overlay) overlay.classList.remove("hidden");
+                    if (menuButton) menuButton.setAttribute("aria-expanded", "true");
+                    document.body.classList.add("overflow-hidden", "md:overflow-auto");
+                } else {
+                    closeMobileSidebar();
+                }
+            }
 
 
-                list.appendChild(row);
+            function closeMobileSidebar() {
+                const sidebar = document.getElementById("recruiterSidebar");
+                const overlay = document.getElementById("sidebarOverlay");
+                const menuButton = document.querySelector('[aria-controls="recruiterSidebar"]');
 
+                if (sidebar) {
+                    sidebar.classList.add("-translate-x-full");
+                    sidebar.classList.remove("translate-x-0");
+                }
+
+                if (overlay) overlay.classList.add("hidden");
+                if (menuButton) menuButton.setAttribute("aria-expanded", "false");
+                document.body.classList.remove("overflow-hidden");
+            }
+
+
+            window.addEventListener("resize", () => {
+                if (window.innerWidth >= 768) {
+                    const sidebar = document.getElementById("recruiterSidebar");
+                    const overlay = document.getElementById("sidebarOverlay");
+                    const menuButton = document.querySelector('[aria-controls="recruiterSidebar"]');
+
+                    if (sidebar) {
+                        sidebar.classList.remove("-translate-x-full", "translate-x-0");
+                    }
+
+                    if (overlay) overlay.classList.add("hidden");
+                    if (menuButton) menuButton.setAttribute("aria-expanded", "false");
+                    document.body.classList.remove("overflow-hidden");
+                }
             });
 
-        }
+
+            // ============================================================
+            // SECTION NAVIGATION
+            // ============================================================
+
+            function showSection(section) {
+
+                if (window.innerWidth < 768) {
+                    closeMobileSidebar();
+                }
+
+                const overview =
+                    document.getElementById("overviewSection");
+
+                const requirements =
+                    document.getElementById("requirementsSection");
+
+                const overviewNav =
+                    document.getElementById("overviewNav");
+
+                const requirementsNav =
+                    document.getElementById("requirementsNav");
+
+                const pageTitle =
+                    document.getElementById("pageTitle");
 
 
-        // ============================================================
-        // OVERVIEW REQUIREMENTS TABLE
-        // ============================================================
+                if (overview) {
+                    overview.classList.add("hidden");
+                }
 
-        function renderOverviewRequirements() {
+                if (requirements) {
+                    requirements.classList.add("hidden");
+                }
 
-            const body =
-                document.getElementById(
-                    "overviewRequirementsBody"
-                );
 
-            if (!body) {
-                return;
+                [overviewNav, requirementsNav]
+                    .filter(Boolean)
+                    .forEach(nav => {
+
+                        nav.classList.remove(
+                            "active",
+                            "bg-slate-950",
+                            "text-white"
+                        );
+
+                        nav.classList.add(
+                            "text-slate-600"
+                        );
+
+                    });
+
+
+                if (section === "requirements") {
+
+                    if (pageTitle) {
+                        pageTitle.textContent = "Requirements";
+                    }
+
+                    if (requirements) {
+                        requirements.classList.remove("hidden");
+                    }
+
+                    if (requirementsNav) {
+                        requirementsNav.classList.add(
+                            "active",
+                            "bg-slate-950",
+                            "text-white"
+                        );
+
+                        requirementsNav.classList.remove(
+                            "text-slate-600"
+                        );
+                    }
+
+                    loadRequirements();
+
+                } else {
+
+                    if (pageTitle) {
+                        pageTitle.textContent = "Overview";
+                    }
+
+                    if (overview) {
+                        overview.classList.remove("hidden");
+                    }
+
+                    if (overviewNav) {
+                        overviewNav.classList.add(
+                            "active",
+                            "bg-slate-950",
+                            "text-white"
+                        );
+
+                        overviewNav.classList.remove(
+                            "text-slate-600"
+                        );
+                    }
+
+                    loadOverviewRequirements();
+
+                }
+
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
             }
 
 
-            const active =
-                recruiterRequirements
-                    .filter(
-                        requirement =>
-                            ["active", "open"].includes(
-                                String(requirement.status || "").toLowerCase()
-                            )
-                    )
-                    .slice(0, 5);
+            // ============================================================
+            // REQUIREMENTS API
+            // ============================================================
+
+            async function loadRequirements() {
+
+                const loading =
+                    document.getElementById("requirementsLoading");
+
+                const list =
+                    document.getElementById("requirementsList");
+
+                const empty =
+                    document.getElementById("requirementsEmpty");
 
 
-            if (active.length === 0) {
-
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-10 text-center text-slate-400">
-                            No active requirements found.
-                        </td>
-                    </tr>
-                `;
-
-                return;
-            }
+                if (!loading || !list || !empty) {
+                    return;
+                }
 
 
-            body.innerHTML =
-                active
-                    .map(requirement => {
+                try {
 
-                        const urgency =
-                            String(
-                                requirement.urgency || "Medium"
-                            ).toLowerCase();
+                    loading.classList.remove("hidden");
 
+                    empty.classList.add("hidden");
 
-                        const urgencyClass =
-                            urgency === "high"
-                                ? "bg-red-50 text-red-600"
-                                : urgency === "medium"
-                                    ? "bg-amber-50 text-amber-600"
-                                    : "bg-slate-100 text-slate-600";
+                    list.innerHTML = "";
 
 
-                        return `
-
-                            <tr class="hover:bg-slate-50">
-
-                                <td class="px-6 py-5">
-
-                                    <div class="font-semibold">
-                                        ${escapeHTML(
-                            requirement.business_outcome ||
-                            "Untitled Requirement"
-                        )}
-                                    </div>
-
-                                    <div class="text-xs text-slate-400 mt-1">
-                                        ${escapeHTML(
-                            requirement.employer_id ||
-                            "Recruiter requirement"
-                        )}
-                                    </div>
-
-                                </td>
-
-                                <td class="px-6 py-5">
-                                    ${escapeHTML(
-                            requirement.work_mode ||
-                            "Not specified"
-                        )}
-                                </td>
-
-                                <td class="px-6 py-5">
-
-                                    <span class="px-2.5 py-1 rounded-full ${urgencyClass} text-xs font-semibold">
-                                        ${escapeHTML(
-                            requirement.urgency ||
-                            "Medium"
-                        )}
-                                    </span>
-
-                                </td>
-
-                                <td class="px-6 py-5">
-
-                                    <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                                        ${escapeHTML(
-                            requirement.status ||
-                            "Active"
-                        )}
-                                    </span>
-
-                                </td>
-
-                                <td class="px-6 py-5 text-right">
-
-                                    <button
-                                        onclick="viewRequirement('${escapeHTML(requirement.id)}')"
-                                        class="text-indigo-600 font-semibold">
-                                        View →
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `;
-                    })
-                    .join("");
-
-        }
-
-
-        // ============================================================
-        // VIEW REQUIREMENT
-        // ============================================================
-
-        async function viewRequirement(id) {
-
-            try {
-
-                const response =
-                    await fetch(
-                        `/api/requirements/${encodeURIComponent(id)}`,
-                        {
+                    const response =
+                        await fetch("/api/requirements", {
                             method: "GET",
                             credentials: "include",
                             headers: {
                                 "Accept": "application/json"
                             }
+                        });
+
+
+                    console.log(
+                        "Requirements API status:",
+                        response.status
+                    );
+
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+                        console.error(
+                            "Requirements API error:",
+                            errorText
+                        );
+
+                        throw new Error(
+                            `Requirements API failed with status ${response.status}`
+                        );
+                    }
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!Array.isArray(data)) {
+                        throw new Error(
+                            "Invalid requirements response"
+                        );
+                    }
+
+
+                    recruiterRequirements = data;
+
+                    updateRequirementSummary();
+
+                    renderRequirements();
+
+                    renderOverviewRequirements();
+
+                    loadDashboardSummary();
+
+                } catch (error) {
+
+                    console.error(
+                        "Unable to load requirements:",
+                        error
+                    );
+
+                    list.innerHTML = `
+                        <div class="p-10 text-center">
+                            <div class="text-red-500 font-semibold">
+                                Unable to load requirements
+                            </div>
+
+                            <p class="text-sm text-slate-400 mt-2">
+                                Please refresh the page and try again.
+                            </p>
+                        </div>
+                    `;
+
+                } finally {
+
+                    loading.classList.add("hidden");
+
+                }
+            }
+
+
+            // ============================================================
+            // SUMMARY
+            // ============================================================
+
+            function updateRequirementSummary() {
+
+                const total =
+                    recruiterRequirements.length;
+
+
+                const active =
+                    recruiterRequirements.filter(
+                        requirement =>
+                            ["active", "open"].includes(
+                                String(requirement.status || "").toLowerCase()
+                            )
+                    ).length;
+
+
+                const highPriority =
+                    recruiterRequirements.filter(
+                        requirement =>
+                            String(
+                                requirement.urgency || ""
+                            ).toLowerCase() === "high"
+                    ).length;
+
+
+                const totalElement =
+                    document.getElementById(
+                        "totalRequirements"
+                    );
+
+                const activeElement =
+                    document.getElementById(
+                        "activeRequirements"
+                    );
+
+                const highElement =
+                    document.getElementById(
+                        "highPriorityRequirements"
+                    );
+
+
+                if (totalElement) {
+                    totalElement.textContent = total;
+                }
+
+                if (activeElement) {
+                    activeElement.textContent = active;
+                }
+
+                if (highElement) {
+                    highElement.textContent = highPriority;
+                }
+
+
+                const overviewActive =
+                    document.getElementById(
+                        "overviewActiveRequirements"
+                    );
+
+                if (overviewActive) {
+                    overviewActive.textContent = active;
+                }
+            }
+
+
+            // ============================================================
+            // REQUIREMENT FILTER
+            // ============================================================
+
+            function filterRequirements() {
+                renderRequirements();
+            }
+
+
+            function setRequirementFilter(filter) {
+
+                currentRequirementFilter = filter;
+
+
+                document
+                    .querySelectorAll(".requirement-filter")
+                    .forEach(button => {
+
+                        button.classList.remove(
+                            "bg-slate-950",
+                            "text-white"
+                        );
+
+                        button.classList.add(
+                            "bg-slate-100",
+                            "text-slate-600"
+                        );
+
+                    });
+
+
+                const selected =
+                    document.getElementById(
+                        "filter" +
+                        filter.charAt(0).toUpperCase() +
+                        filter.slice(1)
+                    );
+
+
+                if (selected) {
+
+                    selected.classList.remove(
+                        "bg-slate-100",
+                        "text-slate-600"
+                    );
+
+                    selected.classList.add(
+                        "bg-slate-950",
+                        "text-white"
+                    );
+
+                }
+
+
+                renderRequirements();
+            }
+
+
+            // ============================================================
+            // REQUIREMENT RENDERING
+            // ============================================================
+
+            function renderRequirements() {
+
+                const list =
+                    document.getElementById(
+                        "requirementsList"
+                    );
+
+                const empty =
+                    document.getElementById(
+                        "requirementsEmpty"
+                    );
+
+
+                if (!list || !empty) {
+                    return;
+                }
+
+
+                const searchElement =
+                    document.getElementById(
+                        "requirementSearch"
+                    );
+
+
+                const search =
+                    searchElement
+                        ? searchElement.value
+                            .toLowerCase()
+                            .trim()
+                        : "";
+
+
+                const filtered =
+                    recruiterRequirements.filter(
+                        requirement => {
+
+                            const status =
+                                String(requirement.status || "").toLowerCase();
+
+
+                            const searchText =
+                                [
+                                    requirement.business_outcome,
+                                    requirement.work_mode,
+                                    requirement.urgency,
+                                    ...(Array.isArray(
+                                        requirement.essential_capabilities
+                                    )
+                                        ? requirement.essential_capabilities
+                                        : []),
+                                    ...(Array.isArray(
+                                        requirement.preferred_capabilities
+                                    )
+                                        ? requirement.preferred_capabilities
+                                        : [])
+                                ]
+                                    .join(" ")
+                                    .toLowerCase();
+
+
+                            const matchesSearch =
+                                !search ||
+                                searchText.includes(search);
+
+
+                            const matchesFilter =
+                                currentRequirementFilter === "all" ||
+                                (currentRequirementFilter === "active" && ["active", "open"].includes(status)) ||
+                                status === currentRequirementFilter;
+
+
+                            return (
+                                matchesSearch &&
+                                matchesFilter
+                            );
                         }
                     );
 
 
-                if (!response.ok) {
+                list.innerHTML = "";
 
-                    const errorText =
-                        await response.text();
+
+                if (filtered.length === 0) {
+
+                    empty.classList.remove("hidden");
+
+                    return;
+                }
+
+
+                empty.classList.add("hidden");
+
+
+                filtered.forEach(requirement => {
+
+                    const urgency =
+                        String(
+                            requirement.urgency || "Medium"
+                        ).toLowerCase();
+
+
+                    const status =
+                        String(
+                            requirement.status || "Active"
+                        ).toLowerCase();
+
+
+                    const urgencyClass =
+                        urgency === "high"
+                            ? "bg-red-50 text-red-600"
+                            : urgency === "medium"
+                                ? "bg-amber-50 text-amber-600"
+                                : "bg-slate-100 text-slate-600";
+
+
+                    const statusClass =
+                        ["active", "open"].includes(status)
+                            ? "bg-emerald-50 text-emerald-600"
+                            : status === "paused"
+                                ? "bg-amber-50 text-amber-600"
+                                : "bg-slate-100 text-slate-500";
+
+
+                    const skills =
+                        Array.isArray(
+                            requirement.essential_capabilities
+                        )
+                            ? requirement
+                                .essential_capabilities
+                                .slice(0, 6)
+                            : [];
+
+
+                    const skillHTML =
+                        skills
+                            .map(
+                                skill => `
+                                    <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-medium">
+                                        ${escapeHTML(skill)}
+                                    </span>
+                                `
+                            )
+                            .join("");
+
+
+                    const compensation =
+                        requirement.target_compensation
+                            ? `₹${Number(
+                                requirement.target_compensation
+                            ).toLocaleString("en-IN")}`
+                            : "Not specified";
+
+
+                    const vacancyCost =
+                        Number(
+                            requirement.vacancy_cost_daily || 0
+                        ).toLocaleString("en-IN");
+
+
+                    const row =
+                        document.createElement("div");
+
+
+                    row.className =
+                        "p-6 hover:bg-slate-50 transition";
+
+
+                    row.innerHTML = `
+
+                        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+
+                            <div class="flex-1">
+
+                                <div class="flex items-center gap-3 flex-wrap">
+
+                                    <h4 class="font-bold text-lg">
+                                        ${escapeHTML(
+                        requirement.business_outcome ||
+                        "Untitled Requirement"
+                    )}
+                                    </h4>
+
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${urgencyClass}">
+                                        ${escapeHTML(
+                        requirement.urgency ||
+                        "Medium"
+                    )}
+                                    </span>
+
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${statusClass}">
+                                        ${escapeHTML(
+                        requirement.status ||
+                        "Active"
+                    )}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="flex flex-wrap gap-4 mt-3 text-sm text-slate-500">
+
+                                    <span>
+                                        Work Mode:
+                                        <strong class="text-slate-700">
+                                            ${escapeHTML(
+                        requirement.work_mode ||
+                        "Not specified"
+                    )}
+                                        </strong>
+                                    </span>
+
+                                    <span>
+                                        Budget:
+                                        <strong class="text-slate-700">
+                                            ${compensation}
+                                        </strong>
+                                    </span>
+
+                                    <span>
+                                        Vacancy Cost:
+                                        <strong class="text-slate-700">
+                                            ₹${vacancyCost}/day
+                                        </strong>
+                                    </span>
+
+                                </div>
+
+
+                                ${skillHTML
+                            ? `
+                                            <div class="flex flex-wrap gap-2 mt-4">
+                                                ${skillHTML}
+                                            </div>
+                                        `
+                            : ""
+                        }
+
+                            </div>
+
+
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+
+                                <button
+                                    onclick="viewRequirement('${escapeHTML(requirement.id)}')"
+                                    class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-white text-center w-full sm:w-auto">
+                                    View
+                                </button>
+
+                                <button
+                                    onclick="matchRequirement('${escapeHTML(requirement.id)}')"
+                                    class="px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 text-center w-full sm:w-auto">
+                                    AI Match
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+
+                    list.appendChild(row);
+
+                });
+
+            }
+
+
+            // ============================================================
+            // OVERVIEW REQUIREMENTS TABLE
+            // ============================================================
+
+            function renderOverviewRequirements() {
+
+                const body =
+                    document.getElementById(
+                        "overviewRequirementsBody"
+                    );
+
+                if (!body) {
+                    return;
+                }
+
+
+                const active =
+                    recruiterRequirements
+                        .filter(
+                            requirement =>
+                                ["active", "open"].includes(
+                                    String(requirement.status || "").toLowerCase()
+                                )
+                        )
+                        .slice(0, 5);
+
+
+                if (active.length === 0) {
+
+                    body.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-slate-400">
+                                No active requirements found.
+                            </td>
+                        </tr>
+                    `;
+
+                    return;
+                }
+
+
+                body.innerHTML =
+                    active
+                        .map(requirement => {
+
+                            const urgency =
+                                String(
+                                    requirement.urgency || "Medium"
+                                ).toLowerCase();
+
+
+                            const urgencyClass =
+                                urgency === "high"
+                                    ? "bg-red-50 text-red-600"
+                                    : urgency === "medium"
+                                        ? "bg-amber-50 text-amber-600"
+                                        : "bg-slate-100 text-slate-600";
+
+
+                            return `
+
+                                <tr class="hover:bg-slate-50">
+
+                                    <td class="px-6 py-5">
+
+                                        <div class="font-semibold">
+                                            ${escapeHTML(
+                                requirement.business_outcome ||
+                                "Untitled Requirement"
+                            )}
+                                        </div>
+
+                                        <div class="text-xs text-slate-400 mt-1">
+                                            ${escapeHTML(
+                                requirement.employer_id ||
+                                "Recruiter requirement"
+                            )}
+                                        </div>
+
+                                    </td>
+
+                                    <td class="px-6 py-5">
+                                        ${escapeHTML(
+                                requirement.work_mode ||
+                                "Not specified"
+                            )}
+                                    </td>
+
+                                    <td class="px-6 py-5">
+
+                                        <span class="px-2.5 py-1 rounded-full ${urgencyClass} text-xs font-semibold">
+                                            ${escapeHTML(
+                                requirement.urgency ||
+                                "Medium"
+                            )}
+                                        </span>
+
+                                    </td>
+
+                                    <td class="px-6 py-5">
+
+                                        <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
+                                            ${escapeHTML(
+                                requirement.status ||
+                                "Active"
+                            )}
+                                        </span>
+
+                                    </td>
+
+                                    <td class="px-6 py-5 text-right">
+
+                                        <button
+                                            onclick="viewRequirement('${escapeHTML(requirement.id)}')"
+                                            class="text-indigo-600 font-semibold">
+                                            View →
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                            `;
+                        })
+                        .join("");
+
+            }
+
+
+            // ============================================================
+            // VIEW REQUIREMENT
+            // ============================================================
+
+            async function viewRequirement(id) {
+
+                try {
+
+                    const response =
+                        await fetch(
+                            `/api/requirements/${encodeURIComponent(id)}`,
+                            {
+                                method: "GET",
+                                credentials: "include",
+                                headers: {
+                                    "Accept": "application/json"
+                                }
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+                        console.error(
+                            "Requirement detail error:",
+                            errorText
+                        );
+
+                        throw new Error(
+                            "Unable to load requirement"
+                        );
+                    }
+
+
+                    const requirement =
+                        await response.json();
+
+
+                    showRequirementDetail(requirement);
+
+
+                } catch (error) {
 
                     console.error(
-                        "Requirement detail error:",
-                        errorText
+                        "Unable to view requirement:",
+                        error
                     );
 
-                    throw new Error(
-                        "Unable to load requirement"
+                    alert(
+                        "Unable to load this requirement."
                     );
+
                 }
-
-
-                const requirement =
-                    await response.json();
-
-
-                showRequirementDetail(requirement);
-
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to view requirement:",
-                    error
-                );
-
-                alert(
-                    "Unable to load this requirement."
-                );
 
             }
 
-        }
+
+            // ============================================================
+            // REQUIREMENT DETAIL MODAL
+            // ============================================================
+
+            function showRequirementDetail(requirement) {
+
+                const existing =
+                    document.getElementById(
+                        "requirementDetailModal"
+                    );
 
 
-        // ============================================================
-        // REQUIREMENT DETAIL MODAL
-        // ============================================================
-
-        function showRequirementDetail(requirement) {
-
-            const existing =
-                document.getElementById(
-                    "requirementDetailModal"
-                );
-
-
-            if (existing) {
-                existing.remove();
-            }
-
-
-            const essential =
-                Array.isArray(
-                    requirement.essential_capabilities
-                )
-                    ? requirement.essential_capabilities
-                    : [];
-
-
-            const preferred =
-                Array.isArray(
-                    requirement.preferred_capabilities
-                )
-                    ? requirement.preferred_capabilities
-                    : [];
-
-
-            const modal =
-                document.createElement("div");
-
-
-            modal.id =
-                "requirementDetailModal";
-
-
-            modal.className =
-                "fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4";
-
-
-            modal.innerHTML = `
-
-                <div class="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-
-                    <div class="p-6 border-b border-slate-200 flex items-start justify-between">
-
-                        <div>
-
-                            <div class="text-xs uppercase tracking-wider text-indigo-600 font-semibold mb-2">
-                                Requirement Details
-                            </div>
-
-                            <h3 class="text-2xl font-bold">
-                                ${escapeHTML(
-                requirement.business_outcome ||
-                "Requirement"
-            )}
-                            </h3>
-
-                        </div>
-
-                        <button
-                            onclick="document.getElementById('requirementDetailModal').remove()"
-                            class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600">
-                            ✕
-                        </button>
-
-                    </div>
-
-
-                    <div class="p-6 space-y-6">
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                            <div class="rounded-xl bg-slate-50 p-4">
-                                <div class="text-xs text-slate-400">
-                                    Status
-                                </div>
-
-                                <div class="font-semibold mt-1">
-                                    ${escapeHTML(
-                requirement.status ||
-                "Active"
-            )}
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl bg-slate-50 p-4">
-                                <div class="text-xs text-slate-400">
-                                    Priority
-                                </div>
-
-                                <div class="font-semibold mt-1">
-                                    ${escapeHTML(
-                requirement.urgency ||
-                "Medium"
-            )}
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl bg-slate-50 p-4">
-                                <div class="text-xs text-slate-400">
-                                    Work Mode
-                                </div>
-
-                                <div class="font-semibold mt-1">
-                                    ${escapeHTML(
-                requirement.work_mode ||
-                "Not specified"
-            )}
-                                </div>
-                            </div>
-
-                        </div>
-
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                            <div class="border border-slate-200 rounded-xl p-5">
-
-                                <div class="text-sm font-semibold">
-                                    Target Compensation
-                                </div>
-
-                                <div class="text-2xl font-bold mt-2">
-                                    ${requirement.target_compensation
-                    ? `₹${Number(
-                        requirement.target_compensation
-                    ).toLocaleString("en-IN")}`
-                    : "Not specified"
-                }
-                                </div>
-
-                            </div>
-
-                            <div class="border border-slate-200 rounded-xl p-5">
-
-                                <div class="text-sm font-semibold">
-                                    Vacancy Cost
-                                </div>
-
-                                <div class="text-2xl font-bold mt-2">
-                                    ₹${Number(
-                    requirement.vacancy_cost_daily || 0
-                ).toLocaleString("en-IN")}
-                                    <span class="text-sm text-slate-400">
-                                        /day
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <div>
-
-                            <h4 class="font-semibold mb-3">
-                                Essential Capabilities
-                            </h4>
-
-                            <div class="flex flex-wrap gap-2">
-
-                                ${essential.length
-                    ? essential.map(
-                        skill => `
-                                                <span class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-medium">
-                                                    ${escapeHTML(skill)}
-                                                </span>
-                                            `
-                    ).join("")
-                    : `<span class="text-slate-400 text-sm">None specified</span>`
+                if (existing) {
+                    existing.remove();
                 }
 
+
+                const essential =
+                    Array.isArray(
+                        requirement.essential_capabilities
+                    )
+                        ? requirement.essential_capabilities
+                        : [];
+
+
+                const preferred =
+                    Array.isArray(
+                        requirement.preferred_capabilities
+                    )
+                        ? requirement.preferred_capabilities
+                        : [];
+
+
+                const modal =
+                    document.createElement("div");
+
+
+                modal.id =
+                    "requirementDetailModal";
+
+
+                modal.className =
+                    "fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4";
+
+
+                modal.innerHTML = `
+
+                    <div class="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+
+                        <div class="p-6 border-b border-slate-200 flex items-start justify-between">
+
+                            <div>
+
+                                <div class="text-xs uppercase tracking-wider text-indigo-600 font-semibold mb-2">
+                                    Requirement Details
+                                </div>
+
+                                <h3 class="text-2xl font-bold">
+                                    ${escapeHTML(
+                    requirement.business_outcome ||
+                    "Requirement"
+                )}
+                                </h3>
+
                             </div>
-
-                        </div>
-
-
-                        <div>
-
-                            <h4 class="font-semibold mb-3">
-                                Preferred Capabilities
-                            </h4>
-
-                            <div class="flex flex-wrap gap-2">
-
-                                ${preferred.length
-                    ? preferred.map(
-                        skill => `
-                                                <span class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium">
-                                                    ${escapeHTML(skill)}
-                                                </span>
-                                            `
-                    ).join("")
-                    : `<span class="text-slate-400 text-sm">None specified</span>`
-                }
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="flex justify-end">
 
                             <button
-                                onclick="matchRequirement('${escapeHTML(requirement.id)}')"
-                                class="px-5 py-3 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
-                                Run AI Matching
+                                onclick="document.getElementById('requirementDetailModal').remove()"
+                                class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600">
+                                ✕
                             </button>
 
                         </div>
 
+
+                        <div class="p-6 space-y-6">
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                                <div class="rounded-xl bg-slate-50 p-4">
+                                    <div class="text-xs text-slate-400">
+                                        Status
+                                    </div>
+
+                                    <div class="font-semibold mt-1">
+                                        ${escapeHTML(
+                    requirement.status ||
+                    "Active"
+                )}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-xl bg-slate-50 p-4">
+                                    <div class="text-xs text-slate-400">
+                                        Priority
+                                    </div>
+
+                                    <div class="font-semibold mt-1">
+                                        ${escapeHTML(
+                    requirement.urgency ||
+                    "Medium"
+                )}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-xl bg-slate-50 p-4">
+                                    <div class="text-xs text-slate-400">
+                                        Work Mode
+                                    </div>
+
+                                    <div class="font-semibold mt-1">
+                                        ${escapeHTML(
+                    requirement.work_mode ||
+                    "Not specified"
+                )}
+                                    </div>
+                                </div>
+
+                            </div>
+
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                <div class="border border-slate-200 rounded-xl p-5">
+
+                                    <div class="text-sm font-semibold">
+                                        Target Compensation
+                                    </div>
+
+                                    <div class="text-2xl font-bold mt-2">
+                                        ${requirement.target_compensation
+                        ? `₹${Number(
+                            requirement.target_compensation
+                        ).toLocaleString("en-IN")}`
+                        : "Not specified"
+                    }
+                                    </div>
+
+                                </div>
+
+                                <div class="border border-slate-200 rounded-xl p-5">
+
+                                    <div class="text-sm font-semibold">
+                                        Vacancy Cost
+                                    </div>
+
+                                    <div class="text-2xl font-bold mt-2">
+                                        ₹${Number(
+                        requirement.vacancy_cost_daily || 0
+                    ).toLocaleString("en-IN")}
+                                        <span class="text-sm text-slate-400">
+                                            /day
+                                        </span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div>
+
+                                <h4 class="font-semibold mb-3">
+                                    Essential Capabilities
+                                </h4>
+
+                                <div class="flex flex-wrap gap-2">
+
+                                    ${essential.length
+                        ? essential.map(
+                            skill => `
+                                                    <span class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-medium">
+                                                        ${escapeHTML(skill)}
+                                                    </span>
+                                                `
+                        ).join("")
+                        : `<span class="text-slate-400 text-sm">None specified</span>`
+                    }
+
+                                </div>
+
+                            </div>
+
+
+                            <div>
+
+                                <h4 class="font-semibold mb-3">
+                                    Preferred Capabilities
+                                </h4>
+
+                                <div class="flex flex-wrap gap-2">
+
+                                    ${preferred.length
+                        ? preferred.map(
+                            skill => `
+                                                    <span class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium">
+                                                        ${escapeHTML(skill)}
+                                                    </span>
+                                                `
+                        ).join("")
+                        : `<span class="text-slate-400 text-sm">None specified</span>`
+                    }
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="flex justify-end">
+
+                                <button
+                                    onclick="matchRequirement('${escapeHTML(requirement.id)}')"
+                                    class="px-5 py-3 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+                                    Run AI Matching
+                                </button>
+
+                            </div>
+
+                        </div>
+
                     </div>
-
-                </div>
-            `;
+                `;
 
 
-            document.body.appendChild(modal);
+                document.body.appendChild(modal);
 
-        }
-
-
-        // ============================================================
-        // AI MATCHING ENTRY
-        // ============================================================
-
-        function matchRequirement(id) {
-
-            const requirement =
-                recruiterRequirements.find(
-                    item =>
-                        String(item.id) === String(id)
-                );
-
-
-            if (!requirement) {
-                return;
             }
 
 
-            /*
-             * The supplied backend exposes candidate/requirement
-             * matching endpoints. The full AI Matching workspace
-             * will be wired in the next recruiter module.
-             */
+            // ============================================================
+            // AI MATCHING ENTRY
+            // ============================================================
 
-            alert(
-                "AI Matching selected for:\n\n" +
-                (
-                    requirement.business_outcome ||
-                    "Requirement"
-                )
-            );
+            function matchRequirement(id) {
 
-        }
+                const requirement =
+                    recruiterRequirements.find(
+                        item =>
+                            String(item.id) === String(id)
+                    );
 
 
-        // ============================================================
-        // CREATE REQUIREMENT UI
-        // ============================================================
+                if (!requirement) {
+                    return;
+                }
 
-        function showCreateRequirement() {
 
-            const modal =
-                document.getElementById(
-                    "createRequirementModal"
+                /*
+                * The supplied backend exposes candidate/requirement
+                * matching endpoints. The full AI Matching workspace
+                * will be wired in the next recruiter module.
+                */
+
+                alert(
+                    "AI Matching selected for:\n\n" +
+                    (
+                        requirement.business_outcome ||
+                        "Requirement"
+                    )
                 );
 
-            if (modal) {
-                modal.classList.remove("hidden");
             }
 
-        }
 
+            // ============================================================
+            // CREATE REQUIREMENT UI
+            // ============================================================
 
-        function closeCreateRequirement() {
+            function showCreateRequirement() {
 
-            const modal =
-                document.getElementById(
-                    "createRequirementModal"
-                );
+                const modal =
+                    document.getElementById(
+                        "createRequirementModal"
+                    );
 
-            if (modal) {
-                modal.classList.add("hidden");
+                if (modal) {
+                    modal.classList.remove("hidden");
+                }
+
             }
 
-        }
 
-        async function handleCreateRequirement(event) {
-            event.preventDefault();
+            function closeCreateRequirement() {
 
-            const message =
-                document.getElementById("createRequirementMessage");
+                const modal =
+                    document.getElementById(
+                        "createRequirementModal"
+                    );
 
-            const saveButton =
-                document.querySelector(
-                    '#createRequirementForm button[type="submit"]'
-                );
+                if (modal) {
+                    modal.classList.add("hidden");
+                }
 
-            const businessOutcome =
-                document.getElementById("createBusinessOutcome").value.trim();
+            }
 
-            const workMode =
-                document.getElementById("createWorkMode").value;
+            async function handleCreateRequirement(event) {
+                event.preventDefault();
 
-            const urgency =
-                document.getElementById("createUrgency").value;
+                const message =
+                    document.getElementById("createRequirementMessage");
 
-            const compensationValue =
-                document.getElementById("createCompensation").value;
+                const saveButton =
+                    document.querySelector(
+                        '#createRequirementForm button[type="submit"]'
+                    );
 
-            const vacancyCostValue =
-                document.getElementById("createVacancyCost").value;
+                const businessOutcome =
+                    document.getElementById("createBusinessOutcome").value.trim();
 
-            const essentialText =
-                document.getElementById("createEssentialCapabilities").value;
+                const workMode =
+                    document.getElementById("createWorkMode").value;
 
-            const preferredText =
-                document.getElementById("createPreferredCapabilities").value;
+                const urgency =
+                    document.getElementById("createUrgency").value;
+
+                const compensationValue =
+                    document.getElementById("createCompensation").value;
+
+                const vacancyCostValue =
+                    document.getElementById("createVacancyCost").value;
+
+                const essentialText =
+                    document.getElementById("createEssentialCapabilities").value;
+
+                const preferredText =
+                    document.getElementById("createPreferredCapabilities").value;
 
 
-            if (!businessOutcome) {
-                if (message) {
-                    message.className =
-                        "rounded-xl p-4 text-sm bg-red-50 text-red-700";
+                if (!businessOutcome) {
+                    if (message) {
+                        message.className =
+                            "rounded-xl p-4 text-sm bg-red-50 text-red-700";
 
-                    message.textContent =
-                        "Please enter the Requirement / Business Outcome.";
+                        message.textContent =
+                            "Please enter the Requirement / Business Outcome.";
+                    }
+
+                    return false;
+                }
+
+
+                const essentialCapabilities =
+                    essentialText
+                        .split(",")
+                        .map(skill => skill.trim())
+                        .filter(Boolean);
+
+
+                const preferredCapabilities =
+                    preferredText
+                        .split(",")
+                        .map(skill => skill.trim())
+                        .filter(Boolean);
+
+
+                const payload = {
+                    business_outcome: businessOutcome,
+                    work_mode: workMode,
+                    urgency: urgency,
+
+                    target_compensation:
+                        compensationValue
+                            ? Number(compensationValue)
+                            : 0,
+
+                    vacancy_cost_daily:
+                        vacancyCostValue
+                            ? Number(vacancyCostValue)
+                            : 0,
+
+                    essential_capabilities:
+                        essentialCapabilities,
+
+                    preferred_capabilities:
+                        preferredCapabilities
+                };
+
+
+                try {
+
+                    if (saveButton) {
+                        saveButton.disabled = true;
+                        saveButton.textContent = "Saving...";
+                    }
+
+
+                    if (message) {
+                        message.className =
+                            "hidden rounded-xl p-4 text-sm";
+                        message.textContent = "";
+                    }
+
+
+                    const response =
+                        await fetch("/api/requirements", {
+                            method: "POST",
+
+                            credentials: "include",
+
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json"
+                            },
+
+                            body: JSON.stringify(payload)
+                        });
+
+
+                    const responseText =
+                        await response.text();
+
+
+                    let data = null;
+
+                    try {
+                        data = responseText
+                            ? JSON.parse(responseText)
+                            : null;
+                    } catch {
+                        data = null;
+                    }
+
+
+                    if (!response.ok) {
+
+                        console.error(
+                            "Create Requirement API error:",
+                            response.status,
+                            responseText
+                        );
+
+                        throw new Error(
+                            data?.detail ||
+                            `Unable to create requirement (${response.status})`
+                        );
+                    }
+
+
+                    console.log(
+                        "Requirement created successfully:",
+                        data
+                    );
+
+
+                    if (message) {
+                        message.className =
+                            "rounded-xl p-4 text-sm bg-emerald-50 text-emerald-700";
+
+                        message.textContent =
+                            "Requirement created successfully.";
+                    }
+
+
+                    /*
+                    * Refresh live requirements from database
+                    */
+                    await loadRequirements();
+
+                    await loadDashboardSummary();
+
+
+                    /*
+                    * Reset form
+                    */
+                    const form =
+                        document.getElementById(
+                            "createRequirementForm"
+                        );
+
+                    if (form) {
+                        form.reset();
+                    }
+
+
+                    /*
+                    * Close modal after successful save
+                    */
+                    setTimeout(() => {
+
+                        closeCreateRequirement();
+
+                        if (message) {
+                            message.className =
+                                "hidden rounded-xl p-4 text-sm";
+
+                            message.textContent = "";
+                        }
+
+                    }, 700);
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Unable to create requirement:",
+                        error
+                    );
+
+
+                    if (message) {
+                        message.className =
+                            "rounded-xl p-4 text-sm bg-red-50 text-red-700";
+
+                        message.textContent =
+                            error.message ||
+                            "Unable to create requirement.";
+                    }
+
+                } finally {
+
+                    if (saveButton) {
+                        saveButton.disabled = false;
+                        saveButton.textContent =
+                            "Save Requirement";
+                    }
+
                 }
 
                 return false;
             }
 
+            // ============================================================
+            // HTML ESCAPE
+            // ============================================================
 
-            const essentialCapabilities =
-                essentialText
-                    .split(",")
-                    .map(skill => skill.trim())
-                    .filter(Boolean);
+            function escapeHTML(value) {
 
+                return String(value ?? "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
 
-            const preferredCapabilities =
-                preferredText
-                    .split(",")
-                    .map(skill => skill.trim())
-                    .filter(Boolean);
-
-
-            const payload = {
-                business_outcome: businessOutcome,
-                work_mode: workMode,
-                urgency: urgency,
-
-                target_compensation:
-                    compensationValue
-                        ? Number(compensationValue)
-                        : 0,
-
-                vacancy_cost_daily:
-                    vacancyCostValue
-                        ? Number(vacancyCostValue)
-                        : 0,
-
-                essential_capabilities:
-                    essentialCapabilities,
-
-                preferred_capabilities:
-                    preferredCapabilities
-            };
+            }
 
 
-            try {
+            // ============================================================
+            // LOGOUT
+            // ============================================================
 
-                if (saveButton) {
-                    saveButton.disabled = true;
-                    saveButton.textContent = "Saving...";
-                }
+            function logout() {
 
+                localStorage.removeItem("user");
 
-                if (message) {
-                    message.className =
-                        "hidden rounded-xl p-4 text-sm";
-                    message.textContent = "";
-                }
+                window.location.href = "/login";
+
+            }
 
 
-                const response =
-                    await fetch("/api/requirements", {
-                        method: "POST",
+            // ============================================================
+            // INITIALIZE
+            // ============================================================
 
+
+            // ============================================================
+            // LIVE RECRUITER DASHBOARD SUMMARY
+            // ============================================================
+
+            async function loadDashboardSummary() {
+                try {
+                    const response = await fetch("/api/recruiter/dashboard", {
+                        method: "GET",
                         credentials: "include",
-
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-
-                        body: JSON.stringify(payload)
+                        headers: { "Accept": "application/json" }
                     });
 
+                    if (!response.ok) {
+                        const detail = await response.text();
+                        console.error("Dashboard API error:", detail);
+                        throw new Error(`Dashboard API failed: ${response.status}`);
+                    }
 
-                const responseText =
-                    await response.text();
+                    const data = await response.json();
 
+                    setText("overviewActiveRequirements", data.requirements?.active ?? 0);
+                    setText("candidateCount", data.candidates?.total ?? 0);
+                    setText("shortlistedCount", data.shortlisted ?? 0);
+                    setText("interviewCount", data.interviews?.total ?? 0);
+                    setText("interviewToday", `${data.interviews?.today ?? 0} scheduled today`);
+                    setText("requirementsTrend", `${data.requirements?.total ?? 0} total requirements`);
+                    setText("candidateTrend", "From live database");
 
-                let data = null;
+                    renderPipeline(data.pipeline || []);
+                    renderDashboardAlerts(data.alerts || []);
+                } catch (error) {
+                    console.error("Unable to load recruiter dashboard summary:", error);
+                    ["overviewActiveRequirements", "candidateCount", "shortlistedCount", "interviewCount"].forEach(id => setText(id, "—"));
+                    setText("interviewToday", "Unable to load");
+                    const alerts = document.getElementById("dashboardAlerts");
+                    if (alerts) {
+                        alerts.innerHTML = `
+                            <div class="p-4 rounded-xl bg-red-50 border border-red-100">
+                                <div class="text-sm font-semibold text-red-800">Dashboard data unavailable</div>
+                                <p class="text-xs text-red-600 mt-1">Check the backend API and refresh the page.</p>
+                            </div>`;
+                    }
+                }
+            }
 
-                try {
-                    data = responseText
-                        ? JSON.parse(responseText)
-                        : null;
-                } catch {
-                    data = null;
+            function setText(id, value) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            }
+
+            function renderPipeline(pipeline) {
+                const ids = {
+                    Applied: ["pipelineApplied", "pipelineAppliedBar"],
+                    Screening: ["pipelineScreening", "pipelineScreeningBar"],
+                    Shortlisted: ["pipelineShortlisted", "pipelineShortlistedBar"],
+                    Interview: ["pipelineInterview", "pipelineInterviewBar"],
+                    Offer: ["pipelineOffer", "pipelineOfferBar"]
+                };
+
+                pipeline.forEach(item => {
+                    const pair = ids[item.stage];
+                    if (!pair) return;
+                    setText(pair[0], item.count ?? 0);
+                    const bar = document.getElementById(pair[1]);
+                    if (bar) bar.style.width = `${Math.max(0, Math.min(100, item.percentage || 0))}%`;
+                });
+            }
+
+            function renderDashboardAlerts(alerts) {
+                const container = document.getElementById("dashboardAlerts");
+                if (!container) return;
+
+                const styles = {
+                    high: ["bg-red-50", "border-red-100", "text-red-800", "text-red-600", "text-red-700"],
+                    medium: ["bg-amber-50", "border-amber-100", "text-amber-800", "text-amber-600", "text-amber-700"],
+                    info: ["bg-indigo-50", "border-indigo-100", "text-indigo-800", "text-indigo-600", "text-indigo-700"]
+                };
+
+                if (!alerts.length) {
+                    container.innerHTML = `<div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">No alerts right now.</div>`;
+                    return;
                 }
 
+                container.innerHTML = alerts.slice(0, 3).map(alert => {
+                    const style = styles[alert.severity] || styles.info;
+                    return `
+                        <div class="p-4 rounded-xl ${style[0]} border ${style[1]}">
+                            <div class="text-sm font-semibold ${style[2]}">${escapeHTML(alert.title || "Alert")}</div>
+                            <p class="text-xs ${style[3]} mt-1">${escapeHTML(alert.message || "")}</p>
+                            <button class="text-xs font-semibold ${style[4]} mt-3" onclick="showSection('requirements')">Review →</button>
+                        </div>`;
+                }).join("");
+            }
 
-                if (!response.ok) {
+            async function initializeRecruiterDashboard() {
 
-                    console.error(
-                        "Create Requirement API error:",
-                        response.status,
-                        responseText
-                    );
+                loadRecruiter();
 
-                    throw new Error(
-                        data?.detail ||
-                        `Unable to create requirement (${response.status})`
-                    );
-                }
+                loadCandidateCount();
 
-
-                console.log(
-                    "Requirement created successfully:",
-                    data
-                );
-
-
-                if (message) {
-                    message.className =
-                        "rounded-xl p-4 text-sm bg-emerald-50 text-emerald-700";
-
-                    message.textContent =
-                        "Requirement created successfully.";
-                }
-
-
-                /*
-                 * Refresh live requirements from database
-                 */
                 await loadRequirements();
 
                 await loadDashboardSummary();
 
-
-                /*
-                 * Reset form
-                 */
-                const form =
-                    document.getElementById(
-                        "createRequirementForm"
-                    );
-
-                if (form) {
-                    form.reset();
-                }
-
-
-                /*
-                 * Close modal after successful save
-                 */
-                setTimeout(() => {
-
-                    closeCreateRequirement();
-
-                    if (message) {
-                        message.className =
-                            "hidden rounded-xl p-4 text-sm";
-
-                        message.textContent = "";
-                    }
-
-                }, 700);
-
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to create requirement:",
-                    error
-                );
-
-
-                if (message) {
-                    message.className =
-                        "rounded-xl p-4 text-sm bg-red-50 text-red-700";
-
-                    message.textContent =
-                        error.message ||
-                        "Unable to create requirement.";
-                }
-
-            } finally {
-
-                if (saveButton) {
-                    saveButton.disabled = false;
-                    saveButton.textContent =
-                        "Save Requirement";
-                }
+                showSection("overview");
 
             }
 
-            return false;
-        }
 
-        // ============================================================
-        // HTML ESCAPE
-        // ============================================================
+            initializeRecruiterDashboard();
 
-        function escapeHTML(value) {
+        </script>
 
-            return String(value ?? "")
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+    </body>
 
-        }
-
-
-        // ============================================================
-        // LOGOUT
-        // ============================================================
-
-        function logout() {
-
-            localStorage.removeItem("user");
-
-            window.location.href = "/login";
-
-        }
-
-
-        // ============================================================
-        // INITIALIZE
-        // ============================================================
-
-
-        // ============================================================
-        // LIVE RECRUITER DASHBOARD SUMMARY
-        // ============================================================
-
-        async function loadDashboardSummary() {
-            try {
-                const response = await fetch("/api/recruiter/dashboard", {
-                    method: "GET",
-                    credentials: "include",
-                    headers: { "Accept": "application/json" }
-                });
-
-                if (!response.ok) {
-                    const detail = await response.text();
-                    console.error("Dashboard API error:", detail);
-                    throw new Error(`Dashboard API failed: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                setText("overviewActiveRequirements", data.requirements?.active ?? 0);
-                setText("candidateCount", data.candidates?.total ?? 0);
-                setText("shortlistedCount", data.shortlisted ?? 0);
-                setText("interviewCount", data.interviews?.total ?? 0);
-                setText("interviewToday", `${data.interviews?.today ?? 0} scheduled today`);
-                setText("requirementsTrend", `${data.requirements?.total ?? 0} total requirements`);
-                setText("candidateTrend", "From live database");
-
-                renderPipeline(data.pipeline || []);
-                renderDashboardAlerts(data.alerts || []);
-            } catch (error) {
-                console.error("Unable to load recruiter dashboard summary:", error);
-                ["overviewActiveRequirements", "candidateCount", "shortlistedCount", "interviewCount"].forEach(id => setText(id, "—"));
-                setText("interviewToday", "Unable to load");
-                const alerts = document.getElementById("dashboardAlerts");
-                if (alerts) {
-                    alerts.innerHTML = `
-                        <div class="p-4 rounded-xl bg-red-50 border border-red-100">
-                            <div class="text-sm font-semibold text-red-800">Dashboard data unavailable</div>
-                            <p class="text-xs text-red-600 mt-1">Check the backend API and refresh the page.</p>
-                        </div>`;
-                }
-            }
-        }
-
-        function setText(id, value) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        }
-
-        function renderPipeline(pipeline) {
-            const ids = {
-                Applied: ["pipelineApplied", "pipelineAppliedBar"],
-                Screening: ["pipelineScreening", "pipelineScreeningBar"],
-                Shortlisted: ["pipelineShortlisted", "pipelineShortlistedBar"],
-                Interview: ["pipelineInterview", "pipelineInterviewBar"],
-                Offer: ["pipelineOffer", "pipelineOfferBar"]
-            };
-
-            pipeline.forEach(item => {
-                const pair = ids[item.stage];
-                if (!pair) return;
-                setText(pair[0], item.count ?? 0);
-                const bar = document.getElementById(pair[1]);
-                if (bar) bar.style.width = `${Math.max(0, Math.min(100, item.percentage || 0))}%`;
-            });
-        }
-
-        function renderDashboardAlerts(alerts) {
-            const container = document.getElementById("dashboardAlerts");
-            if (!container) return;
-
-            const styles = {
-                high: ["bg-red-50", "border-red-100", "text-red-800", "text-red-600", "text-red-700"],
-                medium: ["bg-amber-50", "border-amber-100", "text-amber-800", "text-amber-600", "text-amber-700"],
-                info: ["bg-indigo-50", "border-indigo-100", "text-indigo-800", "text-indigo-600", "text-indigo-700"]
-            };
-
-            if (!alerts.length) {
-                container.innerHTML = `<div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">No alerts right now.</div>`;
-                return;
-            }
-
-            container.innerHTML = alerts.slice(0, 3).map(alert => {
-                const style = styles[alert.severity] || styles.info;
-                return `
-                    <div class="p-4 rounded-xl ${style[0]} border ${style[1]}">
-                        <div class="text-sm font-semibold ${style[2]}">${escapeHTML(alert.title || "Alert")}</div>
-                        <p class="text-xs ${style[3]} mt-1">${escapeHTML(alert.message || "")}</p>
-                        <button class="text-xs font-semibold ${style[4]} mt-3" onclick="showSection('requirements')">Review →</button>
-                    </div>`;
-            }).join("");
-        }
-
-        async function initializeRecruiterDashboard() {
-
-            loadRecruiter();
-
-            loadCandidateCount();
-
-            await loadRequirements();
-
-            await loadDashboardSummary();
-
-            showSection("overview");
-
-        }
-
-
-        initializeRecruiterDashboard();
-
-    </script>
-
-</body>
-
-</html>
+    </html>

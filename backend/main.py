@@ -365,6 +365,166 @@ def create_requirement(
         "status": "Active"
     }
 
+
+    # ============================================================
+# CANDIDATE JOB DISCOVERY
+# ============================================================
+
+@app.get("/api/jobs")
+def list_candidate_jobs(
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """
+    Candidate-facing job discovery.
+
+    Proposal flow:
+    Requirement Twin
+        ↓
+    Open Job
+        ↓
+    Candidate Discovery
+    """
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT
+                r.id,
+                r.employer_id,
+                r.business_outcome,
+                r.vacancy_cost_daily,
+                r.essential_capabilities,
+                r.preferred_capabilities,
+                r.target_compensation,
+                r.work_mode,
+                r.urgency,
+                r.status,
+
+                ro.id AS role_id,
+                ro.title AS role_title,
+                ro.generated_jd,
+                ro.adjacent_capabilities,
+                ro.market_scarcity_score,
+                ro.hiring_difficulty_score
+
+            FROM requirements r
+
+            LEFT JOIN roles ro
+                ON ro.requirement_id = r.id
+
+            WHERE LOWER(r.status) IN ('open', 'active', 'sourcing')
+
+            ORDER BY
+                CASE LOWER(r.urgency)
+                    WHEN 'high' THEN 1
+                    WHEN 'medium' THEN 2
+                    ELSE 3
+                END,
+                r.id DESC
+        """)
+
+        rows = cursor.fetchall()
+
+        jobs = []
+
+        for row in rows:
+
+            # ------------------------------------------------
+            # Check whether current candidate already applied
+            # ------------------------------------------------
+
+            candidate_id = (
+                current_user.get("candidate_id")
+                or current_user.get("id")
+            )
+
+            application_status = None
+            application_id = None
+
+            if candidate_id:
+
+                cursor.execute("""
+                    SELECT id, status
+                    FROM applications
+                    WHERE requirement_id = ?
+                      AND candidate_id = ?
+                    LIMIT 1
+                """, (
+                    row["id"],
+                    candidate_id
+                ))
+
+                application = cursor.fetchone()
+
+                if application:
+                    application_id = application["id"]
+                    application_status = application["status"]
+
+            # ------------------------------------------------
+            # Build job response
+            # ------------------------------------------------
+
+            jobs.append({
+                "requirement_id": row["id"],
+
+                "role": {
+                    "id": row["role_id"],
+                    "title": row["role_title"],
+                    "generated_jd": row["generated_jd"],
+                    "adjacent_capabilities": (
+                        json.loads(row["adjacent_capabilities"])
+                        if row["adjacent_capabilities"]
+                        else []
+                    ),
+                    "market_scarcity_score": (
+                        row["market_scarcity_score"]
+                        if row["market_scarcity_score"] is not None
+                        else 0.0
+                    ),
+                    "hiring_difficulty_score": (
+                        row["hiring_difficulty_score"]
+                        if row["hiring_difficulty_score"] is not None
+                        else 0.0
+                    )
+                },
+
+                "employer_id": row["employer_id"],
+
+                "business_outcome": row["business_outcome"],
+
+                "essential_capabilities": json.loads(
+                    row["essential_capabilities"]
+                ),
+
+                "preferred_capabilities": json.loads(
+                    row["preferred_capabilities"]
+                ),
+
+                "target_compensation": row["target_compensation"],
+
+                "work_mode": row["work_mode"],
+
+                "urgency": row["urgency"],
+
+                "status": row["status"],
+
+                "application": {
+                    "applied": application_status is not None,
+                    "application_id": application_id,
+                    "status": application_status
+                }
+            })
+
+        return {
+            "count": len(jobs),
+            "jobs": jobs
+        }
+
+    finally:
+        conn.close()
+
 @app.get("/api/requirements")
 def list_requirements(current_user: dict = Depends(require_authenticated_user)):
     conn = get_db_connection()
@@ -472,6 +632,338 @@ def get_requirement(req_id: str, current_user: dict = Depends(require_authentica
         "sla": sla_status
     }
 
+
+# ============================================================
+# APPLICATION / HIRING JOURNEY
+# ============================================================
+
+class ApplyJobRequest(BaseModel):
+    cover_note: Optional[str] = None
+
+
+@app.post("/api/requirements/{req_id}/apply")
+def apply_for_requirement(
+    req_id: str,
+    req: ApplyJobRequest,
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """
+    Candidate applies for an open requirement.
+
+    Hiring journey:
+    Candidate
+        ↓
+    Requirement
+        ↓
+    Application
+        ↓
+    Applied
+    """
+
+    # --------------------------------------------------------
+    # 1. Get candidate ID from authenticated user
+    # --------------------------------------------------------
+
+    candidate_id = current_user.get("candidate_id") or current_user.get("id")
+
+    if not candidate_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Authenticated user is not linked to a candidate profile"
+        )
+
+    # Make sure this candidate belongs to the logged-in user
+    check_candidate_ownership(candidate_id, current_user)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        # ----------------------------------------------------
+        # 2. Verify requirement exists
+        # ----------------------------------------------------
+
+        cursor.execute(
+            "SELECT * FROM requirements WHERE id = ?",
+            (req_id,)
+        )
+
+        requirement_row = cursor.fetchone()
+
+        if not requirement_row:
+            raise HTTPException(
+                status_code=404,
+                detail="Requirement not found"
+            )
+
+        # ----------------------------------------------------
+        # 3. Requirement must be open
+        # ----------------------------------------------------
+
+        requirement_status = str(
+            requirement_row["status"] or ""
+        ).lower()
+
+        if requirement_status not in ["open", "active", "sourcing"]:
+            raise HTTPException(
+                status_code=400,
+                detail="This job is not currently accepting applications"
+            )
+
+        # ----------------------------------------------------
+        # 4. Verify candidate exists
+        # ----------------------------------------------------
+
+        cursor.execute(
+            "SELECT * FROM candidates WHERE id = ?",
+            (candidate_id,)
+        )
+
+        candidate_row = cursor.fetchone()
+
+        if not candidate_row:
+            raise HTTPException(
+                status_code=404,
+                detail="Candidate profile not found"
+            )
+
+        # ----------------------------------------------------
+        # 5. Check candidate consent
+        # ----------------------------------------------------
+
+        if not bool(candidate_row["consent_status"]):
+            raise HTTPException(
+                status_code=403,
+                detail="Candidate consent is required before applying"
+            )
+
+        # ----------------------------------------------------
+        # 6. Prevent duplicate application
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT id, status
+            FROM applications
+            WHERE requirement_id = ?
+              AND candidate_id = ?
+            """,
+            (req_id, candidate_id)
+        )
+
+        existing_application = cursor.fetchone()
+
+        if existing_application:
+
+            raise HTTPException(
+                status_code=409,
+                detail="Candidate has already applied for this job"
+            )
+
+        # ----------------------------------------------------
+        # 7. Build Candidate Twin
+        # ----------------------------------------------------
+
+        candidate = CandidateTwin(
+            id=candidate_row["id"],
+            name=candidate_row["name"],
+            email=candidate_row["email"],
+            phone=candidate_row["phone"],
+            status=candidate_row["status"],
+            notice_period_days=candidate_row["notice_period_days"],
+            current_salary=candidate_row["current_salary"],
+            expected_salary=candidate_row["expected_salary"],
+            location=candidate_row["location"],
+            remote_preference=candidate_row["remote_preference"],
+            skills=json.loads(candidate_row["skills"]),
+            experience=json.loads(candidate_row["experience"]),
+            career_goals=candidate_row["career_goals"],
+            data_confidence=candidate_row["data_confidence"],
+            profile_freshness=candidate_row["profile_freshness"],
+            consent_status=bool(candidate_row["consent_status"])
+        )
+
+        # ----------------------------------------------------
+        # 8. Build Requirement Twin
+        # ----------------------------------------------------
+
+        requirement = RequirementTwin(
+            id=requirement_row["id"],
+            employer_id=requirement_row["employer_id"],
+            business_outcome=requirement_row["business_outcome"],
+            vacancy_cost_daily=requirement_row["vacancy_cost_daily"],
+            essential_capabilities=json.loads(
+                requirement_row["essential_capabilities"]
+            ),
+            preferred_capabilities=json.loads(
+                requirement_row["preferred_capabilities"]
+            ),
+            target_compensation=requirement_row["target_compensation"],
+            work_mode=requirement_row["work_mode"],
+            urgency=requirement_row["urgency"],
+            status=requirement_row["status"],
+            alternatives_considered=json.loads(
+                requirement_row["alternatives_considered"]
+            )
+        )
+
+        # ----------------------------------------------------
+        # 9. Get Role Twin
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM roles
+            WHERE requirement_id = ?
+            """,
+            (req_id,)
+        )
+
+        role_row = cursor.fetchone()
+
+        role = RoleTwin(
+            id=role_row["id"] if role_row else f"role_{req_id}",
+            requirement_id=req_id,
+            title=(
+                role_row["title"]
+                if role_row
+                else requirement.business_outcome
+            ),
+            generated_jd=(
+                role_row["generated_jd"]
+                if role_row
+                else ""
+            ),
+            adjacent_capabilities=(
+                json.loads(role_row["adjacent_capabilities"])
+                if role_row
+                else []
+            ),
+            market_scarcity_score=(
+                role_row["market_scarcity_score"]
+                if role_row
+                else 0.5
+            ),
+            hiring_difficulty_score=(
+                role_row["hiring_difficulty_score"]
+                if role_row
+                else 0.5
+            )
+        )
+
+        # ----------------------------------------------------
+        # 10. Calculate AI suitability BEFORE application
+        # ----------------------------------------------------
+
+        suitability = calculate_suitability(
+            candidate,
+            requirement,
+            role
+        )
+
+        # ----------------------------------------------------
+        # 11. Create Application
+        # ----------------------------------------------------
+
+        application_id = f"app_{uuid.uuid4().hex[:10]}"
+
+        now = datetime.now().isoformat()
+
+        cursor.execute(
+            """
+            INSERT INTO applications (
+                id,
+                requirement_id,
+                candidate_id,
+                recruiter_id,
+                status,
+                match_score,
+                source,
+                cover_note,
+                applied_at,
+                updated_at,
+                rejection_reason
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                application_id,
+                req_id,
+                candidate_id,
+                None,
+                "Applied",
+                suitability.overall_suitability,
+                "candidate",
+                req.cover_note,
+                now,
+                now,
+                None
+            )
+        )
+
+        # ----------------------------------------------------
+        # 12. Update Candidate Twin status
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            UPDATE candidates
+            SET status = 'Applied'
+            WHERE id = ?
+            """,
+            (candidate_id,)
+        )
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    # --------------------------------------------------------
+    # 13. Publish event
+    # --------------------------------------------------------
+
+    publish_event(
+        "CandidateApplied",
+        "CandidatePortal",
+        {
+            "application_id": application_id,
+            "candidate_id": candidate_id,
+            "requirement_id": req_id,
+            "match_score": suitability.overall_suitability
+        }
+    )
+
+    # --------------------------------------------------------
+    # 14. Return application + AI match information
+    # --------------------------------------------------------
+
+    return {
+        "status": "success",
+        "message": "Application submitted successfully",
+        "application": {
+            "id": application_id,
+            "candidate_id": candidate_id,
+            "requirement_id": req_id,
+            "status": "Applied",
+            "match_score": suitability.overall_suitability,
+            "cover_note": req.cover_note,
+            "applied_at": now
+        },
+        "matching": {
+            "overall_suitability": suitability.overall_suitability,
+            "capability_fit": suitability.capability_fit,
+            "evidence_score": suitability.evidence_score,
+            "recency_score": suitability.recency_score,
+            "logistics_fit": suitability.logistics_fit,
+            "retention_probability": suitability.retention_prob,
+            "explanation": suitability.explanation,
+            "concerns": suitability.concerns
+        }
+    }
+
 @app.get("/api/candidates")
 def list_candidates(current_user: dict = Depends(require_recruiter)):
     conn = get_db_connection()
@@ -537,7 +1029,85 @@ def get_candidate(cand_id: str, req_id: Optional[str] = "req_1", current_user: d
         "offer_recommendation": offer,
         "negotiation_simulation": negotiation
     }
+# ============================================================
+# CURRENT USER - CANDIDATE TWIN
+# ============================================================
 
+@app.get("/api/my-candidate")
+def get_my_candidate(
+    current_user: dict = Depends(require_authenticated_user)
+):
+    """
+    Return the Candidate Twin belonging to the logged-in user.
+
+    Proposal:
+        Candidate Login
+             ↓
+        Candidate Twin
+             ↓
+        Job Discovery
+    """
+
+    candidate_id = (
+        current_user.get("candidate_id")
+        or current_user.get("id")
+    )
+
+    if not candidate_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Authenticated user is not linked to a candidate profile"
+        )
+
+    # Enforce ownership
+    check_candidate_ownership(
+        candidate_id,
+        current_user
+    )
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM candidates
+            WHERE id = ?
+            """,
+            (candidate_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if not row:
+            raise HTTPException(
+                status_code=404,
+                detail="Candidate profile not found"
+            )
+
+        return {
+            "id": row["id"],
+            "name": row["name"],
+            "email": row["email"],
+            "phone": row["phone"],
+            "status": row["status"],
+            "notice_period_days": row["notice_period_days"],
+            "current_salary": row["current_salary"],
+            "expected_salary": row["expected_salary"],
+            "location": row["location"],
+            "remote_preference": row["remote_preference"],
+            "skills": json.loads(row["skills"]),
+            "experience": json.loads(row["experience"]),
+            "career_goals": row["career_goals"],
+            "data_confidence": row["data_confidence"],
+            "profile_freshness": row["profile_freshness"],
+            "consent_status": bool(row["consent_status"])
+        }
+
+    finally:
+        conn.close()
 
 # ============================================================
 # RECRUITER DASHBOARD SUMMARY
@@ -711,6 +1281,515 @@ def recruiter_dashboard_summary(
 
     finally:
         conn.close()
+
+
+# ============================================================
+# RECRUITER APPLICATION PIPELINE
+# ============================================================
+
+class UpdateApplicationStatusRequest(BaseModel):
+    status: str
+    notes: Optional[str] = None
+
+
+ALLOWED_APPLICATION_STATUSES = [
+    "Applied",
+    "Screening",
+    "Shortlisted",
+    "Interviewing",
+    "Selected",
+    "Offered",
+    "Accepted",
+    "Rejected",
+    "Withdrawn",
+    "Joined"
+]
+
+
+@app.get("/api/recruiter/applications")
+def get_recruiter_applications(
+    current_user: dict = Depends(require_recruiter)
+):
+    """
+    Recruiter Application Queue.
+
+    Proposal flow:
+
+    Candidate Twin
+        ↓
+    Application
+        ↓
+    Recruiter Action Queue
+        ↓
+    Hiring Journey
+    """
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                a.id,
+                a.requirement_id,
+                a.candidate_id,
+                a.recruiter_id,
+                a.status,
+                a.match_score,
+                a.source,
+                a.cover_note,
+                a.applied_at,
+                a.updated_at,
+                a.rejection_reason,
+
+                c.name AS candidate_name,
+                c.email AS candidate_email,
+                c.phone AS candidate_phone,
+                c.notice_period_days,
+                c.expected_salary,
+                c.location,
+                c.remote_preference,
+                c.data_confidence,
+                c.profile_freshness,
+                c.consent_status,
+
+                r.business_outcome,
+                r.target_compensation,
+                r.work_mode,
+                r.urgency,
+                r.status AS requirement_status,
+
+                ro.title AS role_title
+
+            FROM applications a
+
+            JOIN candidates c
+                ON c.id = a.candidate_id
+
+            JOIN requirements r
+                ON r.id = a.requirement_id
+
+            LEFT JOIN roles ro
+                ON ro.requirement_id = r.id
+
+            ORDER BY
+                CASE a.status
+                    WHEN 'Applied' THEN 1
+                    WHEN 'Screening' THEN 2
+                    WHEN 'Shortlisted' THEN 3
+                    WHEN 'Interviewing' THEN 4
+                    WHEN 'Selected' THEN 5
+                    WHEN 'Offered' THEN 6
+                    WHEN 'Accepted' THEN 7
+                    WHEN 'Joined' THEN 8
+                    ELSE 9
+                END,
+                a.updated_at DESC
+        """)
+
+        rows = cursor.fetchall()
+
+        applications = []
+
+        for row in rows:
+
+            applications.append({
+                "id": row["id"],
+
+                "candidate": {
+                    "id": row["candidate_id"],
+                    "name": row["candidate_name"],
+                    "email": row["candidate_email"],
+                    "phone": row["candidate_phone"],
+                    "notice_period_days": row["notice_period_days"],
+                    "expected_salary": row["expected_salary"],
+                    "location": row["location"],
+                    "remote_preference": row["remote_preference"],
+                    "data_confidence": row["data_confidence"],
+                    "profile_freshness": row["profile_freshness"],
+                    "consent_status": bool(
+                        row["consent_status"]
+                    )
+                },
+
+                "requirement": {
+                    "id": row["requirement_id"],
+                    "business_outcome": row["business_outcome"],
+                    "target_compensation": row["target_compensation"],
+                    "work_mode": row["work_mode"],
+                    "urgency": row["urgency"],
+                    "status": row["requirement_status"]
+                },
+
+                "role": {
+                    "title": row["role_title"]
+                },
+
+                "status": row["status"],
+
+                "match_score": row["match_score"],
+
+                "source": row["source"],
+
+                "cover_note": row["cover_note"],
+
+                "applied_at": row["applied_at"],
+
+                "updated_at": row["updated_at"],
+
+                "rejection_reason": row["rejection_reason"]
+            })
+
+        return {
+            "count": len(applications),
+            "applications": applications
+        }
+
+    finally:
+        conn.close()
+
+
+# ============================================================
+# GET SINGLE APPLICATION
+# ============================================================
+
+@app.get("/api/applications/{application_id}")
+def get_application(
+    application_id: str,
+    current_user: dict = Depends(require_recruiter)
+):
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                a.*,
+
+                c.name AS candidate_name,
+                c.email AS candidate_email,
+                c.phone AS candidate_phone,
+                c.status AS candidate_status,
+                c.notice_period_days,
+                c.current_salary,
+                c.expected_salary,
+                c.location,
+                c.remote_preference,
+                c.skills,
+                c.experience,
+                c.career_goals,
+                c.data_confidence,
+                c.profile_freshness,
+                c.consent_status,
+
+                r.business_outcome,
+                r.essential_capabilities,
+                r.preferred_capabilities,
+                r.target_compensation,
+                r.work_mode,
+                r.urgency,
+                r.status AS requirement_status
+
+            FROM applications a
+
+            JOIN candidates c
+                ON c.id = a.candidate_id
+
+            JOIN requirements r
+                ON r.id = a.requirement_id
+
+            WHERE a.id = ?
+
+        """, (application_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            raise HTTPException(
+                status_code=404,
+                detail="Application not found"
+            )
+
+        return {
+            "application": {
+                "id": row["id"],
+                "requirement_id": row["requirement_id"],
+                "candidate_id": row["candidate_id"],
+                "recruiter_id": row["recruiter_id"],
+                "status": row["status"],
+                "match_score": row["match_score"],
+                "source": row["source"],
+                "cover_note": row["cover_note"],
+                "applied_at": row["applied_at"],
+                "updated_at": row["updated_at"],
+                "rejection_reason": row["rejection_reason"]
+            },
+
+            "candidate": {
+                "id": row["candidate_id"],
+                "name": row["candidate_name"],
+                "email": row["candidate_email"],
+                "phone": row["candidate_phone"],
+                "status": row["candidate_status"],
+                "notice_period_days": row["notice_period_days"],
+                "current_salary": row["current_salary"],
+                "expected_salary": row["expected_salary"],
+                "location": row["location"],
+                "remote_preference": row["remote_preference"],
+                "skills": json.loads(row["skills"]),
+                "experience": json.loads(row["experience"]),
+                "career_goals": row["career_goals"],
+                "data_confidence": row["data_confidence"],
+                "profile_freshness": row["profile_freshness"],
+                "consent_status": bool(
+                    row["consent_status"]
+                )
+            },
+
+            "requirement": {
+                "id": row["requirement_id"],
+                "business_outcome": row["business_outcome"],
+                "essential_capabilities": json.loads(
+                    row["essential_capabilities"]
+                ),
+                "preferred_capabilities": json.loads(
+                    row["preferred_capabilities"]
+                ),
+                "target_compensation": row["target_compensation"],
+                "work_mode": row["work_mode"],
+                "urgency": row["urgency"],
+                "status": row["requirement_status"]
+            }
+        }
+
+    finally:
+        conn.close()
+
+
+# ============================================================
+# UPDATE APPLICATION STAGE
+# ============================================================
+
+@app.patch("/api/applications/{application_id}/status")
+def update_application_status(
+    application_id: str,
+    req: UpdateApplicationStatusRequest,
+    current_user: dict = Depends(require_recruiter)
+):
+    """
+    Human-in-the-loop hiring journey transition.
+
+    Applied
+       ↓
+    Screening
+       ↓
+    Shortlisted
+       ↓
+    Interviewing
+       ↓
+    Selected
+       ↓
+    Offered
+       ↓
+    Accepted
+       ↓
+    Joined
+    """
+
+    new_status = req.status.strip()
+
+    if new_status not in ALLOWED_APPLICATION_STATUSES:
+
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Invalid application status",
+                "allowed_statuses": ALLOWED_APPLICATION_STATUSES
+            }
+        )
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                id,
+                candidate_id,
+                requirement_id,
+                status
+            FROM applications
+            WHERE id = ?
+        """, (application_id,))
+
+        application = cursor.fetchone()
+
+        if not application:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Application not found"
+            )
+
+        old_status = application["status"]
+
+        now = datetime.now().isoformat()
+
+        rejection_reason = None
+
+        if new_status == "Rejected":
+            rejection_reason = req.notes or "Rejected by recruiter"
+
+        cursor.execute("""
+            UPDATE applications
+
+            SET
+                status = ?,
+                updated_at = ?,
+                rejection_reason = ?
+
+            WHERE id = ?
+        """, (
+            new_status,
+            now,
+            rejection_reason,
+            application_id
+        ))
+
+        # ----------------------------------------------------
+        # Synchronize Candidate Twin
+        # ----------------------------------------------------
+
+        candidate_status_map = {
+            "Applied": "Applied",
+            "Screening": "Qualified",
+            "Shortlisted": "Qualified",
+            "Interviewing": "Interviewing",
+            "Selected": "Offered",
+            "Offered": "Offered",
+            "Accepted": "Accepted",
+            "Joined": "Joined",
+            "Rejected": "Discoverable",
+            "Withdrawn": "Discoverable"
+        }
+
+        candidate_status = candidate_status_map.get(
+            new_status
+        )
+
+        if candidate_status:
+
+            cursor.execute("""
+                UPDATE candidates
+                SET status = ?
+                WHERE id = ?
+            """, (
+                candidate_status,
+                application["candidate_id"]
+            ))
+
+        conn.commit()
+
+    except HTTPException:
+        conn.rollback()
+        raise
+
+    except Exception as error:
+
+        conn.rollback()
+
+        print(
+            "Application status update failed:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to update application status"
+        )
+
+    finally:
+        conn.close()
+
+    # --------------------------------------------------------
+    # Human decision audit
+    # --------------------------------------------------------
+
+    try:
+
+        AgentDecisionLogger.log_decision(
+            "JourneyOrchestrator",
+            "Advance candidate through hiring journey",
+            {
+                "application_id": application_id,
+                "candidate_id": application["candidate_id"],
+                "requirement_id": application["requirement_id"]
+            },
+            (
+                f"Previous application stage: {old_status}. "
+                f"New stage: {new_status}. "
+                f"Recruiter: "
+                f"{current_user.get('email', 'unknown')}"
+            ),
+            (
+                "Hiring journey transitions require "
+                "recruiter/human oversight."
+            ),
+            (
+                f"Application moved from "
+                f"{old_status} to {new_status}."
+            ),
+            0.99,
+            True
+        )
+
+    except Exception as error:
+
+        print(
+            "Journey decision logging failed:",
+            error
+        )
+
+    # --------------------------------------------------------
+    # Publish event
+    # --------------------------------------------------------
+
+    publish_event(
+        "ApplicationStageChanged",
+        "JourneyOrchestrator",
+        {
+            "application_id": application_id,
+            "candidate_id": application["candidate_id"],
+            "requirement_id": application["requirement_id"],
+            "old_status": old_status,
+            "new_status": new_status,
+            "changed_by": current_user.get(
+                "email",
+                "unknown"
+            ),
+            "notes": req.notes
+        }
+    )
+
+    return {
+        "status": "success",
+        "message": (
+            f"Application moved from "
+            f"{old_status} to {new_status}"
+        ),
+        "application": {
+            "id": application_id,
+            "candidate_id": application["candidate_id"],
+            "requirement_id": application["requirement_id"],
+            "previous_status": old_status,
+            "status": new_status,
+            "updated_at": now
+        }
+    }
 
         
 @app.get("/api/candidates/{cand_id}/match/{req_id}")

@@ -116,3 +116,26 @@ class SimulationResult(BaseModel):
     expected_time_to_fill_days: float
     estimated_cost_of_vacancy: float
     recommended_action: str
+
+
+class ApplicationModel(BaseModel):
+    id: str
+    requirement_id: str
+    candidate_id: str
+    recruiter_id: Optional[str] = None
+
+    status: str
+    # Applied, Screening, Shortlisted, Interviewing,
+    # Selected, Offered, Accepted, Rejected, Withdrawn, Joined
+
+    match_score: Optional[float] = None
+
+    source: str = "candidate"
+    # candidate, recruiter, consultant, ai
+
+    cover_note: Optional[str] = None
+
+    applied_at: str
+    updated_at: str
+
+    rejection_reason: Optional[str] = None

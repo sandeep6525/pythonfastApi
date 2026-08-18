@@ -404,6 +404,27 @@ def init_db():
         badges TEXT
     )
     """)
+    cursor.execute("""
+CREATE TABLE IF NOT EXISTS applications (
+    id TEXT PRIMARY KEY,
+    requirement_id TEXT NOT NULL,
+    candidate_id TEXT NOT NULL,
+    recruiter_id TEXT,
+
+    status TEXT NOT NULL DEFAULT 'Applied',
+
+    match_score REAL,
+
+    source TEXT NOT NULL DEFAULT 'candidate',
+
+    cover_note TEXT,
+
+    applied_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+
+    rejection_reason TEXT
+)
+""")
     
     # Create Interviews Table
     cursor.execute("""
