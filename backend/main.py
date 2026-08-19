@@ -1791,6 +1791,408 @@ def update_application_status(
         }
     }
 
+# ============================================================
+# RECRUITER SHORTLIST CANDIDATE
+# ============================================================
+
+class RecruiterShortlistRequest(BaseModel):
+    requirement_id: str
+    notes: Optional[str] = None
+
+
+@app.post("/api/recruiter/candidates/{candidate_id}/shortlist")
+def shortlist_candidate(
+    candidate_id: str,
+    req: RecruiterShortlistRequest,
+    current_user: dict = Depends(require_recruiter)
+):
+    """
+    Recruiter-driven shortlist action.
+
+    Flow:
+        Candidate
+            ↓
+        Requirement
+            ↓
+        AI Suitability
+            ↓
+        Application
+            ↓
+        Shortlisted
+    """
+
+    requirement_id = req.requirement_id.strip()
+
+    if not requirement_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Requirement ID is required"
+        )
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+
+        # ----------------------------------------------------
+        # 1. Verify candidate
+        # ----------------------------------------------------
+
+        cursor.execute(
+            "SELECT * FROM candidates WHERE id = ?",
+            (candidate_id,)
+        )
+
+        candidate_row = cursor.fetchone()
+
+        if not candidate_row:
+            raise HTTPException(
+                status_code=404,
+                detail="Candidate not found"
+            )
+
+        # ----------------------------------------------------
+        # 2. Verify requirement
+        # ----------------------------------------------------
+
+        cursor.execute(
+            "SELECT * FROM requirements WHERE id = ?",
+            (requirement_id,)
+        )
+
+        requirement_row = cursor.fetchone()
+
+        if not requirement_row:
+            raise HTTPException(
+                status_code=404,
+                detail="Requirement not found"
+            )
+
+        # ----------------------------------------------------
+        # 3. Build Candidate Twin
+        # ----------------------------------------------------
+
+        candidate = CandidateTwin(
+            id=candidate_row["id"],
+            name=candidate_row["name"],
+            email=candidate_row["email"],
+            phone=candidate_row["phone"],
+            status=candidate_row["status"],
+            notice_period_days=candidate_row["notice_period_days"],
+            current_salary=candidate_row["current_salary"],
+            expected_salary=candidate_row["expected_salary"],
+            location=candidate_row["location"],
+            remote_preference=candidate_row["remote_preference"],
+            skills=json.loads(candidate_row["skills"]),
+            experience=json.loads(candidate_row["experience"]),
+            career_goals=candidate_row["career_goals"],
+            data_confidence=candidate_row["data_confidence"],
+            profile_freshness=candidate_row["profile_freshness"],
+            consent_status=bool(
+                candidate_row["consent_status"]
+            )
+        )
+
+        # ----------------------------------------------------
+        # 4. Build Requirement Twin
+        # ----------------------------------------------------
+
+        requirement = RequirementTwin(
+            id=requirement_row["id"],
+            employer_id=requirement_row["employer_id"],
+            business_outcome=requirement_row["business_outcome"],
+            vacancy_cost_daily=requirement_row["vacancy_cost_daily"],
+            essential_capabilities=json.loads(
+                requirement_row["essential_capabilities"]
+            ),
+            preferred_capabilities=json.loads(
+                requirement_row["preferred_capabilities"]
+            ),
+            target_compensation=requirement_row["target_compensation"],
+            work_mode=requirement_row["work_mode"],
+            urgency=requirement_row["urgency"],
+            status=requirement_row["status"],
+            alternatives_considered=json.loads(
+                requirement_row["alternatives_considered"]
+            )
+        )
+
+        # ----------------------------------------------------
+        # 5. Get Role Twin
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM roles
+            WHERE requirement_id = ?
+            """,
+            (requirement_id,)
+        )
+
+        role_row = cursor.fetchone()
+
+        role = RoleTwin(
+            id=(
+                role_row["id"]
+                if role_row
+                else f"role_{requirement_id}"
+            ),
+            requirement_id=requirement_id,
+            title=(
+                role_row["title"]
+                if role_row
+                else requirement.business_outcome
+            ),
+            generated_jd=(
+                role_row["generated_jd"]
+                if role_row
+                else ""
+            ),
+            adjacent_capabilities=(
+                json.loads(
+                    role_row["adjacent_capabilities"]
+                )
+                if role_row
+                else []
+            ),
+            market_scarcity_score=(
+                role_row["market_scarcity_score"]
+                if role_row
+                else 0.5
+            ),
+            hiring_difficulty_score=(
+                role_row["hiring_difficulty_score"]
+                if role_row
+                else 0.5
+            )
+        )
+
+        # ----------------------------------------------------
+        # 6. Calculate AI suitability on SERVER
+        # ----------------------------------------------------
+
+        suitability = calculate_suitability(
+            candidate,
+            requirement,
+            role
+        )
+
+        match_score = suitability.overall_suitability
+
+        # ----------------------------------------------------
+        # 7. Check existing application
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT id, status
+            FROM applications
+            WHERE requirement_id = ?
+              AND candidate_id = ?
+            LIMIT 1
+            """,
+            (
+                requirement_id,
+                candidate_id
+            )
+        )
+
+        existing_application = cursor.fetchone()
+
+        now = datetime.now().isoformat()
+
+        # ----------------------------------------------------
+        # 8. Existing application → move to Shortlisted
+        # ----------------------------------------------------
+
+        if existing_application:
+
+            application_id = existing_application["id"]
+            old_status = existing_application["status"]
+
+            cursor.execute(
+                """
+                UPDATE applications
+                SET
+                    status = ?,
+                    match_score = ?,
+                    recruiter_id = ?,
+                    updated_at = ?,
+                    rejection_reason = NULL
+                WHERE id = ?
+                """,
+                (
+                    "Shortlisted",
+                    match_score,
+                    str(
+                        current_user.get("id")
+                        or current_user.get("email")
+                        or ""
+                    ),
+                    now,
+                    application_id
+                )
+            )
+
+        # ----------------------------------------------------
+        # 9. No application → create Shortlisted application
+        # ----------------------------------------------------
+
+        else:
+
+            application_id = (
+                f"app_{uuid.uuid4().hex[:10]}"
+            )
+
+            old_status = None
+
+            cursor.execute(
+                """
+                INSERT INTO applications (
+                    id,
+                    requirement_id,
+                    candidate_id,
+                    recruiter_id,
+                    status,
+                    match_score,
+                    source,
+                    cover_note,
+                    applied_at,
+                    updated_at,
+                    rejection_reason
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    application_id,
+                    requirement_id,
+                    candidate_id,
+                    str(
+                        current_user.get("id")
+                        or current_user.get("email")
+                        or ""
+                    ),
+                    "Shortlisted",
+                    match_score,
+                    "recruiter",
+                    req.notes,
+                    now,
+                    now,
+                    None
+                )
+            )
+
+        # ----------------------------------------------------
+        # 10. Update Candidate Twin
+        # ----------------------------------------------------
+
+        cursor.execute(
+            """
+            UPDATE candidates
+            SET status = ?
+            WHERE id = ?
+            """,
+            (
+                "Shortlisted",
+                candidate_id
+            )
+        )
+
+        conn.commit()
+
+    except HTTPException:
+        conn.rollback()
+        raise
+
+    except Exception as error:
+
+        conn.rollback()
+
+        print(
+            "Recruiter shortlist failed:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to shortlist candidate"
+        )
+
+    finally:
+        conn.close()
+
+    # --------------------------------------------------------
+    # 11. Audit decision
+    # --------------------------------------------------------
+
+    try:
+
+        AgentDecisionLogger.log_decision(
+            "RecruiterShortlist",
+            "Move candidate into shortlist",
+            {
+                "candidate_id": candidate_id,
+                "requirement_id": requirement_id,
+                "application_id": application_id
+            },
+            (
+                f"AI suitability score: "
+                f"{match_score:.2f}"
+            ),
+            "Recruiter explicitly approved shortlist action.",
+            "Candidate moved to Shortlisted stage.",
+            0.99,
+            True
+        )
+
+    except Exception as error:
+
+        print(
+            "Shortlist decision logging failed:",
+            error
+        )
+
+    # --------------------------------------------------------
+    # 12. Publish event
+    # --------------------------------------------------------
+
+    try:
+
+        publish_event(
+            "CandidateShortlisted",
+            "RecruiterPortal",
+            {
+                "application_id": application_id,
+                "candidate_id": candidate_id,
+                "requirement_id": requirement_id,
+                "match_score": match_score,
+                "previous_status": old_status,
+                "new_status": "Shortlisted"
+            }
+        )
+
+    except Exception as error:
+
+        print(
+            "Shortlist event publishing failed:",
+            error
+        )
+
+    return {
+        "status": "success",
+        "message": "Candidate added to shortlist",
+        "application": {
+            "id": application_id,
+            "candidate_id": candidate_id,
+            "requirement_id": requirement_id,
+            "previous_status": old_status,
+            "status": "Shortlisted",
+            "match_score": match_score,
+            "updated_at": now
+        }
+    }
+
         
 @app.get("/api/candidates/{cand_id}/match/{req_id}")
 def match_candidate(cand_id: str, req_id: str, current_user: dict = Depends(require_recruiter)):
